@@ -19,7 +19,9 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+import pathlib
 
 from backend.cache import SemanticCache
 from backend.models import CacheStats, QueryRequest, SystemStats
@@ -53,6 +55,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+_FRONTEND = pathlib.Path(__file__).parent.parent / "frontend"
+if _FRONTEND.exists():
+    app.mount("/static", StaticFiles(directory=str(_FRONTEND)), name="static")
+
+@app.get("/", include_in_schema=False)
+async def index():
+    return FileResponse(str(_FRONTEND / "index.html"))
 
 # ---------------------------------------------------------------------------
 # Singletons — initialized at startup
