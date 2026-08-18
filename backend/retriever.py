@@ -1,35 +1,25 @@
 """
-Hybrid retriever combining dense vector search (FAISS/numpy) and BM25 sparse
+Hybrid retriever combining TF-IDF/numpy dense vector search and BM25 sparse
 lexical retrieval, fused with Reciprocal Rank Fusion (RRF).
 
-FAISS is used when available; otherwise a numpy-based brute-force cosine
-similarity search serves as a transparent fallback. BM25 is always provided
-by the rank-bm25 library.
+Uses sklearn TfidfVectorizer + numpy dot product similarity for dense retrieval
+instead of FAISS or sentence-transformers, keeping memory well within 512MB.
 """
 
 from __future__ import annotations
 
 import logging
 import re
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
-
-try:
-    import faiss  # type: ignore
-    _FAISS_AVAILABLE = True
-except ImportError:
-    _FAISS_AVAILABLE = False
-
+from sklearn.feature_extraction.text import TfidfVectorizer  # type: ignore
 from rank_bm25 import BM25Okapi  # type: ignore
 
 from backend.corpus import DOCUMENTS
 from backend.models import RetrievedDoc
 
 logger = logging.getLogger(__name__)
-
-# Embedding dimension used for all dense representations
-_EMBEDDING_DIM = 128
 
 # RRF constant — k=60 is the standard default
 _RRF_K = 60
@@ -40,67 +30,13 @@ def _simple_tokenize(text: str) -> List[str]:
     return re.findall(r"[a-z0-9]+", text.lower())
 
 
-def _deterministic_embedding(text: str, dim: int = _EMBEDDING_DIM) -> np.ndarray:
-    """
-    Produce a deterministic pseudo-embedding for *text* using a seeded random
-    projection keyed on the text content. This simulates a real embedding model
-    and is consistent — identical text always produces the same vector.
-
-    In production this would be replaced by a call to a sentence-transformers model
-    or an embedding API endpoint.
-    """
-    # Create a seed from the text content deterministically
-    seed = abs(hash(text)) % (2 ** 31)
-    rng = np.random.default_rng(seed)
-    # Base noise vector
-    base = rng.standard_normal(dim).astype(np.float32)
-
-    # Add term-frequency signal: for each unique token, add a small directional
-    # perturbation so similar texts produce more similar vectors
-    tokens = _simple_tokenize(text[:500])  # use first 500 chars for speed
-    for token in set(tokens):
-        token_seed = abs(hash(token)) % (2 ** 31)
-        token_rng = np.random.default_rng(token_seed)
-        direction = token_rng.standard_normal(dim).astype(np.float32)
-        base += 0.3 * direction
-
-    # L2-normalize
-    norm = np.linalg.norm(base)
-    if norm > 0:
-        base /= norm
-    return base
-
-
-class _NumpyFlatIndex:
-    """
-    Brute-force cosine similarity index backed by numpy.
-    Drop-in replacement for faiss.IndexFlatIP when FAISS is not installed.
-    """
-
-    def __init__(self, dim: int) -> None:
-        self.dim = dim
-        self._vectors: List[np.ndarray] = []
-
-    def add(self, matrix: np.ndarray) -> None:
-        for row in matrix:
-            self._vectors.append(row.copy())
-
-    def search(self, query: np.ndarray, k: int) -> Tuple[np.ndarray, np.ndarray]:
-        if not self._vectors:
-            return np.array([[]], dtype=np.float32), np.array([[]], dtype=np.int64)
-        matrix = np.stack(self._vectors)  # (N, dim)
-        # Vectors are L2-normalized, so dot product == cosine similarity
-        scores = matrix @ query[0]  # (N,)
-        k_actual = min(k, len(scores))
-        top_indices = np.argsort(scores)[::-1][:k_actual]
-        top_scores = scores[top_indices]
-        return top_scores.reshape(1, -1), top_indices.reshape(1, -1).astype(np.int64)
-
-
 class HybridRetriever:
     """
-    Hybrid retriever combining BM25 sparse search and FAISS/numpy dense search,
+    Hybrid retriever combining BM25 sparse search and TF-IDF dense search,
     fused with Reciprocal Rank Fusion (RRF).
+
+    Uses sklearn TfidfVectorizer + numpy cosine similarity for the dense
+    (FAISS-equivalent) retrieval path to stay within the 512MB RAM limit.
 
     Parameters
     ----------
@@ -121,50 +57,49 @@ class HybridRetriever:
         dense_candidates: int = 20,
         sparse_candidates: int = 20,
     ) -> None:
-        self.corpus = corpus if corpus is not None else DOCUMENTS
+        self.corpus = corpus if corpus is not None else list(DOCUMENTS)
         self.rrf_k = rrf_k
         self.dense_candidates = dense_candidates
         self.sparse_candidates = sparse_candidates
 
-        self._doc_texts: List[str] = [d["text"] for d in self.corpus]
-        self._doc_titles: List[str] = [d["title"] for d in self.corpus]
-
-        logger.info("Building BM25 index over %d documents…", len(self.corpus))
-        self._bm25 = self._build_bm25()
-
-        logger.info("Building dense index (FAISS=%s)…", _FAISS_AVAILABLE)
-        self._dense_index, self._embeddings = self._build_dense_index()
-
+        self._rebuild_indexes()
         logger.info("HybridRetriever ready.")
 
     # ------------------------------------------------------------------
     # Index construction
     # ------------------------------------------------------------------
 
+    def _rebuild_indexes(self) -> None:
+        """Build (or rebuild) BM25 and TF-IDF indexes from the current corpus."""
+        self._doc_texts: List[str] = [d["text"] for d in self.corpus]
+        self._doc_titles: List[str] = [d["title"] for d in self.corpus]
+
+        combined = [
+            d["title"] + " " + d["text"] for d in self.corpus
+        ]
+
+        logger.info("Building BM25 index over %d documents…", len(self.corpus))
+        self._bm25 = self._build_bm25()
+
+        logger.info("Building TF-IDF (FAISS-equivalent) index over %d documents…", len(self.corpus))
+        self._tfidf_vectorizer = TfidfVectorizer(
+            ngram_range=(1, 2),
+            max_features=50_000,
+            sublinear_tf=True,
+        )
+        self._tfidf_matrix = self._tfidf_vectorizer.fit_transform(combined)
+        # Normalize rows so dot product == cosine similarity
+        norms = np.sqrt(self._tfidf_matrix.multiply(self._tfidf_matrix).sum(axis=1))
+        norms = np.asarray(norms).flatten()
+        norms[norms == 0] = 1.0
+        # Keep as sparse; normalization applied during search
+        self._tfidf_norms = norms
+
+        logger.info("Indexes built: %d docs, tfidf shape=%s", len(self.corpus), self._tfidf_matrix.shape)
+
     def _build_bm25(self) -> BM25Okapi:
-        tokenized = [_simple_tokenize(text) for text in self._doc_texts]
+        tokenized = [_simple_tokenize(t + " " + tx) for t, tx in zip(self._doc_titles, self._doc_texts)]
         return BM25Okapi(tokenized)
-
-    def _build_dense_index(self):
-        """Build FAISS or numpy flat index from document embeddings."""
-        embeddings = np.stack([
-            _deterministic_embedding(title + " " + text)
-            for title, text in zip(self._doc_titles, self._doc_texts)
-        ])  # shape: (N, dim)
-
-        if _FAISS_AVAILABLE:
-            index = faiss.IndexFlatIP(embeddings.shape[1])
-            # Vectors must be float32 and L2-normalized for inner product == cosine sim
-            faiss.normalize_L2(embeddings)
-            index.add(embeddings)
-            logger.info("FAISS index built with %d vectors.", index.ntotal)
-        else:
-            index = _NumpyFlatIndex(embeddings.shape[1])
-            # Vectors are already L2-normalized by _deterministic_embedding
-            index.add(embeddings)
-            logger.info("Numpy fallback index built with %d vectors.", len(self.corpus))
-
-        return index, embeddings
 
     # ------------------------------------------------------------------
     # Individual retrievers
@@ -172,22 +107,20 @@ class HybridRetriever:
 
     def _dense_search(self, query: str, k: int) -> List[Tuple[int, float]]:
         """
-        Return (doc_index, score) pairs from dense vector search, sorted by score desc.
+        Return (doc_index, score) pairs from TF-IDF cosine similarity search.
+        This is the FAISS-equivalent dense retrieval path.
         """
-        q_emb = _deterministic_embedding(query).reshape(1, -1)
+        q_vec = self._tfidf_vectorizer.transform([query])
+        # Cosine similarity: (q_vec @ tfidf_matrix.T) / (||q|| * ||doc||)
+        q_norm = np.sqrt(q_vec.multiply(q_vec).sum())
+        if q_norm == 0:
+            return []
+        dot_products = (self._tfidf_matrix @ q_vec.T).toarray().flatten()
+        cos_sims = dot_products / (self._tfidf_norms * float(q_norm))
 
-        if _FAISS_AVAILABLE:
-            faiss.normalize_L2(q_emb)
-            scores, indices = self._dense_index.search(q_emb, k)
-        else:
-            scores, indices = self._dense_index.search(q_emb, k)
-
-        results = []
-        for score, idx in zip(scores[0], indices[0]):
-            if idx < 0:  # FAISS returns -1 for padding
-                continue
-            results.append((int(idx), float(score)))
-        return results  # already sorted desc by score
+        k_actual = min(k, len(cos_sims))
+        top_indices = np.argsort(cos_sims)[::-1][:k_actual]
+        return [(int(idx), float(cos_sims[idx])) for idx in top_indices]
 
     def _sparse_search(self, query: str, k: int) -> List[Tuple[int, float]]:
         """
@@ -195,7 +128,6 @@ class HybridRetriever:
         """
         tokens = _simple_tokenize(query)
         scores = self._bm25.get_scores(tokens)
-        # Get top-k indices
         top_indices = np.argsort(scores)[::-1][:k]
         return [(int(idx), float(scores[idx])) for idx in top_indices]
 
@@ -210,18 +142,6 @@ class HybridRetriever:
     ) -> List[Tuple[int, float]]:
         """
         Fuse multiple ranked lists using Reciprocal Rank Fusion.
-
-        Parameters
-        ----------
-        ranked_lists : list of list of (doc_index, raw_score)
-            Each inner list is sorted descending by score. raw_scores are not used
-            by RRF — only the rank order matters.
-        k : int
-            RRF smoothing constant.
-
-        Returns
-        -------
-        List of (doc_index, rrf_score) sorted descending by rrf_score.
         """
         rrf_scores: Dict[int, float] = {}
         for ranked in ranked_lists:
@@ -233,43 +153,77 @@ class HybridRetriever:
     # Public API
     # ------------------------------------------------------------------
 
-    def hybrid_search(self, query: str, top_k: int = 10) -> List[RetrievedDoc]:
+    def search_separate(
+        self,
+        query: str,
+        top_k: int = 5,
+    ) -> Tuple[List[Dict], List[Dict], List[Dict]]:
         """
-        Perform hybrid BM25 + dense search fused with RRF and return top_k results.
-
-        Parameters
-        ----------
-        query : str
-            User query string.
-        top_k : int
-            Number of documents to return.
+        Run all three retrievers and return results separately.
 
         Returns
         -------
-        List of RetrievedDoc sorted by descending RRF score.
+        (bm25_results, faiss_results, hybrid_results)
+        Each is a list of dicts: {doc_id, title, text, score, rank}
         """
         n_candidates = max(top_k * 3, self.dense_candidates, self.sparse_candidates)
         n_candidates = min(n_candidates, len(self.corpus))
 
-        # Run both retrievers
         dense_results = self._dense_search(query, n_candidates)
         sparse_results = self._sparse_search(query, n_candidates)
 
-        # Build per-doc score lookups for annotation
-        dense_scores: Dict[int, float] = {idx: score for idx, score in dense_results}
-        sparse_scores: Dict[int, float] = {idx: score for idx, score in sparse_results}
+        # Normalize BM25 scores to [0, 1]
+        max_bm25 = max((s for _, s in sparse_results), default=1.0) or 1.0
+        # Dense (TF-IDF cosine) already in [0, 1]
 
-        # Normalize BM25 scores to [0, 1] for consistent reporting
-        max_bm25 = max((s for s in sparse_scores.values()), default=1.0) or 1.0
-        sparse_scores_norm = {idx: s / max_bm25 for idx, s in sparse_scores.items()}
+        def _make_result(doc_idx: int, score: float, rank: int) -> Dict:
+            doc = self.corpus[doc_idx]
+            return {
+                "doc_id": doc["id"],
+                "title": doc["title"],
+                "text": doc["text"],
+                "score": round(score, 6),
+                "rank": rank,
+            }
 
-        # Normalize dense scores: they are cosine similarities in [-1, 1]; shift to [0, 1]
-        dense_scores_norm = {idx: (s + 1.0) / 2.0 for idx, s in dense_scores.items()}
+        bm25_results = [
+            _make_result(idx, score / max_bm25, rank)
+            for rank, (idx, score) in enumerate(sparse_results[:top_k], start=1)
+        ]
+
+        faiss_results = [
+            _make_result(idx, score, rank)
+            for rank, (idx, score) in enumerate(dense_results[:top_k], start=1)
+        ]
 
         # RRF fusion
         fused = self._reciprocal_rank_fusion([dense_results, sparse_results], k=self.rrf_k)
+        hybrid_results = [
+            _make_result(idx, rrf_score, rank)
+            for rank, (idx, rrf_score) in enumerate(fused[:top_k], start=1)
+        ]
 
-        # Build RetrievedDoc objects
+        return bm25_results, faiss_results, hybrid_results
+
+    def hybrid_search(self, query: str, top_k: int = 10) -> List[RetrievedDoc]:
+        """
+        Perform hybrid BM25 + dense search fused with RRF and return top_k results.
+        Backward-compatible API used by the /api/query streaming endpoint.
+        """
+        n_candidates = max(top_k * 3, self.dense_candidates, self.sparse_candidates)
+        n_candidates = min(n_candidates, len(self.corpus))
+
+        dense_results = self._dense_search(query, n_candidates)
+        sparse_results = self._sparse_search(query, n_candidates)
+
+        dense_scores: Dict[int, float] = {idx: score for idx, score in dense_results}
+        sparse_scores: Dict[int, float] = {idx: score for idx, score in sparse_results}
+
+        max_bm25 = max((s for s in sparse_scores.values()), default=1.0) or 1.0
+        sparse_scores_norm = {idx: s / max_bm25 for idx, s in sparse_scores.items()}
+
+        fused = self._reciprocal_rank_fusion([dense_results, sparse_results], k=self.rrf_k)
+
         results: List[RetrievedDoc] = []
         for doc_idx, rrf_score in fused[:top_k]:
             doc = self.corpus[doc_idx]
@@ -280,7 +234,7 @@ class HybridRetriever:
                     text=doc["text"],
                     source=doc["source"],
                     score=rrf_score,
-                    dense_score=dense_scores_norm.get(doc_idx, 0.0),
+                    dense_score=dense_scores.get(doc_idx, 0.0),
                     sparse_score=sparse_scores_norm.get(doc_idx, 0.0),
                     rerank_score=None,
                 )
@@ -288,9 +242,28 @@ class HybridRetriever:
 
         return results
 
+    def add_document(self, doc: Dict) -> None:
+        """Add a single document to the corpus and rebuild indexes."""
+        self.corpus.append(doc)
+        self._rebuild_indexes()
+        logger.info("Added document '%s'; corpus size now %d.", doc.get("title"), len(self.corpus))
+
     def embed_query(self, query: str) -> np.ndarray:
         """
-        Return the dense embedding for a query string.
-        Used by the semantic cache for similarity lookup.
+        Return a TF-IDF vector for the query for semantic cache similarity lookup.
+        Returns a dense numpy array (1-D, L2-normalized).
         """
-        return _deterministic_embedding(query)
+        q_vec = self._tfidf_vectorizer.transform([query])
+        dense = np.asarray(q_vec.todense()).flatten()
+        norm = np.linalg.norm(dense)
+        if norm > 0:
+            dense = dense / norm
+        return dense
+
+    def index_size_mb(self) -> float:
+        """Approximate size of the TF-IDF matrix in MB."""
+        import sys
+        mat = self._tfidf_matrix
+        # sparse CSR: data + indices + indptr arrays
+        nbytes = mat.data.nbytes + mat.indices.nbytes + mat.indptr.nbytes
+        return round(nbytes / (1024 * 1024), 3)
