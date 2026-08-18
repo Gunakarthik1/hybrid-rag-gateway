@@ -29,6 +29,7 @@ RUN pip install --no-cache-dir --no-index --find-links /wheels /wheels/* && \
 
 # Copy application source
 COPY backend/ ./backend/
+COPY frontend/ ./frontend/
 
 # Non-root user for security
 RUN useradd --create-home --shell /bin/bash appuser && \
