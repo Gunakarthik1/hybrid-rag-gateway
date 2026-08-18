@@ -3,491 +3,166 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hybrid RAG Gateway</title>
+  <title>RAG Gateway</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Merriweather:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 
   <style>
-    /* ── Reset & base ─────────────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:          #F8F6F1;
-      --bg-card:     #FDFCF9;
-      --bg-dark:     #1C2127;
-      --text:        #2C2C2C;
-      --text-muted:  #7A7268;
-      --text-light:  #B0A898;
-      --teal:        #0D6B6B;
-      --teal-light:  #E8F4F4;
-      --teal-mid:    #1A8C8C;
-      --amber:       #D97706;
-      --amber-light: #FEF3C7;
-      --amber-mid:   #F59E0B;
-      --border:      #E2DDD4;
-      --shadow-sm:   0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-      --shadow-md:   0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
-      --shadow-input:0 2px 8px rgba(0,0,0,0.07), 0 0 0 1px rgba(13,107,107,0.08);
-      --radius-sm:   6px;
-      --radius-md:   10px;
-      --radius-lg:   16px;
-      --font-body:   'Inter', system-ui, -apple-system, sans-serif;
-      --font-serif:  'Merriweather', Georgia, serif;
+      --paper:        #FAF9F6;
+      --ink:          #18181B;
+      --stone:        #71717A;
+      --border:       rgba(24,24,27,0.10);
+      --accent:       #7C3AED;
+      --accent-light: rgba(124,58,237,0.08);
+      --amber:        #D97706;
+      --amber-light:  #FEF3C7;
+      --green:        #16A34A;
+      --green-light:  rgba(22,163,74,0.10);
+      --font-serif:   'Instrument Serif', Georgia, serif;
+      --font-body:    'Plus Jakarta Sans', system-ui, sans-serif;
+      --radius-sm:    8px;
+      --radius-md:    12px;
+      --radius-lg:    20px;
+      --shadow-sm:    0 1px 3px rgba(24,24,27,0.06), 0 1px 2px rgba(24,24,27,0.04);
+      --shadow-md:    0 4px 16px rgba(24,24,27,0.08), 0 2px 4px rgba(24,24,27,0.05);
     }
 
     html, body {
       height: 100%;
-      background: var(--bg);
-      color: var(--text);
+      background: var(--paper);
+      color: var(--ink);
       font-family: var(--font-body);
       font-size: 14px;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
     }
 
-    /* ── Layout ───────────────────────────────────────────────────────────── */
+    /* ── Layout ─────────────────────────────────────────────────────── */
     .app {
       display: flex;
       height: 100vh;
       overflow: hidden;
     }
 
-    /* ── Sidebar ──────────────────────────────────────────────────────────── */
-    .sidebar {
-      width: 268px;
-      flex-shrink: 0;
-      background: var(--bg-card);
-      border-right: 1px solid var(--border);
+    /* ── Main column ─────────────────────────────────────────────────── */
+    .main {
+      flex: 1;
       display: flex;
       flex-direction: column;
-      padding: 0;
-      overflow-y: auto;
-    }
-
-    .sidebar-header {
-      padding: 22px 20px 16px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .sidebar-header h1 {
-      font-family: var(--font-serif);
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--teal);
-      letter-spacing: -0.01em;
-      line-height: 1.3;
-    }
-
-    .sidebar-header .subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 3px;
-      font-weight: 400;
-    }
-
-    .sidebar-section {
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .sidebar-section:last-child {
-      border-bottom: none;
-    }
-
-    .section-label {
-      font-size: 10px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-light);
-      margin-bottom: 10px;
-    }
-
-    /* Stats display */
-    .stat-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 8px;
-    }
-
-    .stat-label {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .stat-value {
-      font-size: 13px;
-      font-weight: 500;
-      color: var(--text);
-      font-variant-numeric: tabular-nums;
-    }
-
-    .stat-value.teal { color: var(--teal); }
-    .stat-value.amber { color: var(--amber); }
-
-    .stat-fraction {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 2px;
-      text-align: right;
-    }
-
-    /* Hit rate bar */
-    .hit-rate-bar {
-      height: 3px;
-      background: var(--border);
-      border-radius: 2px;
-      margin-top: 6px;
+      min-width: 0;
       overflow: hidden;
     }
-    .hit-rate-fill {
-      height: 100%;
-      background: var(--amber);
-      border-radius: 2px;
-      transition: width 0.4s ease;
-    }
 
-    /* Sample queries */
-    .sample-query {
-      display: block;
-      width: 100%;
-      text-align: left;
-      background: none;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 8px 11px;
-      margin-bottom: 7px;
-      cursor: pointer;
-      font-family: var(--font-body);
-      font-size: 12px;
-      color: var(--text);
-      line-height: 1.4;
-      transition: border-color 0.15s, background 0.15s, color 0.15s;
-    }
-
-    .sample-query:hover {
-      border-color: var(--teal);
-      background: var(--teal-light);
-      color: var(--teal);
-    }
-
-    .sample-query:last-child { margin-bottom: 0; }
-
-    /* Clear cache button */
-    .btn-clear {
+    /* ── Header ──────────────────────────────────────────────────────── */
+    .header {
+      padding: 20px 32px 18px;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 6px;
-      width: 100%;
-      padding: 8px 12px;
-      border: 1px solid #E5B8B8;
-      border-radius: var(--radius-sm);
-      background: #FFF8F8;
-      color: #C0392B;
-      font-size: 12px;
-      font-family: var(--font-body);
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
+      gap: 14px;
+      flex-shrink: 0;
+      background: var(--paper);
     }
 
-    .btn-clear:hover { background: #FFEEEE; border-color: #C0392B; }
-    .btn-clear.loading { opacity: 0.6; pointer-events: none; }
+    .header-title {
+      font-family: var(--font-serif);
+      font-style: italic;
+      font-size: 24px;
+      color: var(--ink);
+      line-height: 1;
+      letter-spacing: -0.01em;
+    }
 
-    .btn-clear-icon { font-size: 13px; }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-light);
+      border: 1px solid rgba(124,58,237,0.18);
+      border-radius: 20px;
+      padding: 3px 10px;
+      letter-spacing: 0.01em;
+    }
 
-    /* Connection status dot */
+    .header-right {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .status-dot {
       display: inline-block;
       width: 7px;
       height: 7px;
       border-radius: 50%;
       background: #ccc;
-      margin-right: 5px;
-      vertical-align: middle;
       transition: background 0.3s;
     }
-    .status-dot.online { background: #27AE60; }
-    .status-dot.offline { background: #E74C3C; }
-    .status-dot.checking { background: var(--amber); animation: pulse 1s infinite; }
+    .status-dot.online  { background: var(--green); }
+    .status-dot.offline { background: #EF4444; }
+    .status-dot.checking { background: var(--amber); animation: pulse-dot 1.2s infinite; }
 
-    @keyframes pulse {
+    .status-label {
+      font-size: 12px;
+      color: var(--stone);
+    }
+
+    @keyframes pulse-dot {
       0%, 100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      50% { opacity: 0.35; }
     }
 
-    .status-text {
-      font-size: 11px;
-      color: var(--text-muted);
-      vertical-align: middle;
-    }
-
-    /* ── Main area ────────────────────────────────────────────────────────── */
-    .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-    }
-
-    /* ── Pipeline trail ───────────────────────────────────────────────────── */
-    .pipeline-bar {
-      background: var(--bg-card);
-      border-bottom: 1px solid var(--border);
-      padding: 9px 24px;
-      display: flex;
-      align-items: center;
-      gap: 0;
-      overflow-x: auto;
-    }
-
-    .pipeline-step {
-      display: flex;
-      align-items: center;
-      gap: 0;
-      flex-shrink: 0;
-    }
-
-    .step-label {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-light);
-      padding: 3px 10px;
-      border-radius: 20px;
-      transition: color 0.25s, background 0.25s;
-      white-space: nowrap;
-    }
-
-    .step-label.active {
-      color: var(--teal);
-      background: var(--teal-light);
-    }
-
-    .step-label.done {
-      color: #27AE60;
-      background: #E8F8F0;
-    }
-
-    .step-arrow {
-      color: var(--text-light);
-      font-size: 10px;
-      margin: 0 2px;
-      flex-shrink: 0;
-    }
-
-    /* ── Chat area ────────────────────────────────────────────────────────── */
-    .chat-area {
+    /* ── Scroll area ─────────────────────────────────────────────────── */
+    .scroll-area {
       flex: 1;
       overflow-y: auto;
-      padding: 24px 28px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
       scroll-behavior: smooth;
     }
 
-    /* Empty state */
-    .empty-state {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-muted);
+    .scroll-area::-webkit-scrollbar { width: 5px; }
+    .scroll-area::-webkit-scrollbar-track { background: transparent; }
+    .scroll-area::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── Hero search ─────────────────────────────────────────────────── */
+    .hero {
+      padding: 48px 40px 32px;
+      max-width: 760px;
+      margin: 0 auto;
+      width: 100%;
     }
 
-    .empty-state h2 {
-      font-family: var(--font-serif);
-      font-size: 20px;
-      color: var(--text);
-      margin-bottom: 8px;
-      font-weight: 700;
-    }
-
-    .empty-state p {
-      font-size: 13px;
-      max-width: 380px;
-      line-height: 1.7;
-    }
-
-    .empty-icon {
-      font-size: 36px;
-      margin-bottom: 16px;
-      opacity: 0.5;
-    }
-
-    /* Message bubbles */
-    .message {
-      display: flex;
-      flex-direction: column;
-      max-width: 820px;
-    }
-
-    .message.user {
-      align-self: flex-end;
-      align-items: flex-end;
-    }
-
-    .message.assistant {
-      align-self: flex-start;
-      align-items: flex-start;
-    }
-
-    .bubble {
-      padding: 11px 16px;
-      border-radius: var(--radius-md);
-      font-size: 14px;
-      line-height: 1.65;
+    .search-wrap {
       position: relative;
-    }
-
-    .message.user .bubble {
-      background: var(--teal);
-      color: #fff;
-      border-bottom-right-radius: 3px;
-    }
-
-    .message.assistant .bubble {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-bottom-left-radius: 3px;
+      display: flex;
+      align-items: center;
+      background: #fff;
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius-lg);
       box-shadow: var(--shadow-sm);
-      min-width: 300px;
-    }
-
-    /* Cache hit badge on assistant bubble */
-    .cache-badge {
-      position: absolute;
-      top: -11px;
-      right: 12px;
-      background: var(--amber-light);
-      color: var(--amber);
-      border: 1px solid #FDE68A;
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 7px;
-      border-radius: 20px;
-      white-space: nowrap;
-    }
-
-    /* Answer text */
-    .answer-text {
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    /* Typing cursor */
-    .cursor {
-      display: inline-block;
-      width: 2px;
-      height: 14px;
-      background: var(--teal);
-      vertical-align: text-bottom;
-      animation: blink 0.8s step-end infinite;
-    }
-
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0; }
-    }
-
-    /* Source pills */
-    .source-pills {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      margin-top: 10px;
-    }
-
-    .source-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-size: 11px;
-      color: var(--teal);
-      background: var(--teal-light);
-      border: 1px solid rgba(13,107,107,0.18);
-      border-radius: 20px;
-      padding: 3px 9px;
-      cursor: default;
-      transition: background 0.15s;
-      max-width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .source-pill:hover { background: #D0EBEB; }
-    .pill-rank { font-weight: 600; opacity: 0.7; }
-
-    /* Latency breakdown bar */
-    .latency-row {
-      margin-top: 10px;
-      font-size: 11px;
-      color: var(--text-muted);
-      display: flex;
-      flex-wrap: wrap;
-      gap: 2px 14px;
-      padding-top: 8px;
-      border-top: 1px solid var(--border);
-    }
-
-    .latency-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .latency-bar {
-      display: inline-block;
-      height: 3px;
-      border-radius: 2px;
-      min-width: 2px;
-      max-width: 50px;
-      vertical-align: middle;
-    }
-
-    .latency-val { font-variant-numeric: tabular-nums; }
-
-    .lt-cache   { background: var(--amber); }
-    .lt-ret     { background: var(--teal); }
-    .lt-rerank  { background: #8B5CF6; }
-    .lt-stream  { background: #EC4899; }
-
-    /* Message timestamp */
-    .msg-meta {
-      font-size: 11px;
-      color: var(--text-light);
-      margin-top: 4px;
-      padding: 0 2px;
-    }
-
-    /* ── Input area ───────────────────────────────────────────────────────── */
-    .input-area {
-      padding: 14px 28px 20px;
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-    }
-
-    .input-wrapper {
-      display: flex;
-      align-items: flex-end;
-      gap: 10px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-md);
-      padding: 10px 14px 10px 16px;
-      box-shadow: var(--shadow-input);
       transition: border-color 0.2s, box-shadow 0.2s;
     }
 
-    .input-wrapper:focus-within {
-      border-color: var(--teal);
-      box-shadow: 0 2px 8px rgba(0,0,0,0.07), 0 0 0 2px rgba(13,107,107,0.12);
+    .search-wrap:focus-within {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-light), var(--shadow-sm);
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 18px;
+      color: var(--stone);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
     }
 
     #query-input {
@@ -495,123 +170,491 @@
       border: none;
       background: transparent;
       font-family: var(--font-body);
-      font-size: 14px;
-      color: var(--text);
+      font-size: 15px;
+      color: var(--ink);
       line-height: 1.5;
       resize: none;
       outline: none;
-      max-height: 120px;
-      min-height: 22px;
+      padding: 16px 100px 16px 52px;
+      min-height: 56px;
+      max-height: 140px;
     }
 
-    #query-input::placeholder { color: var(--text-light); }
+    #query-input::placeholder { color: var(--stone); }
 
-    .input-controls {
+    .search-actions {
+      position: absolute;
+      right: 10px;
       display: flex;
       align-items: center;
-      gap: 8px;
-      flex-shrink: 0;
+      gap: 6px;
     }
 
-    .top-k-wrap {
+    .topk-wrap {
       display: flex;
       align-items: center;
-      gap: 5px;
+      gap: 4px;
     }
 
-    .top-k-wrap label {
+    .topk-wrap label {
       font-size: 11px;
-      color: var(--text-muted);
+      color: var(--stone);
+      font-weight: 500;
     }
 
     #top-k-input {
-      width: 42px;
+      width: 38px;
       border: 1px solid var(--border);
-      border-radius: 5px;
-      padding: 3px 6px;
+      border-radius: 6px;
+      padding: 3px 5px;
       font-size: 12px;
       text-align: center;
-      color: var(--text);
-      background: var(--bg);
+      color: var(--ink);
+      background: var(--paper);
       outline: none;
       font-family: var(--font-body);
+      font-weight: 500;
     }
 
-    #top-k-input:focus { border-color: var(--teal); }
+    #top-k-input:focus { border-color: var(--accent); }
 
     .btn-send {
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
       border: none;
-      background: var(--teal);
-      color: white;
+      background: var(--accent);
+      color: #fff;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.15s, transform 0.1s;
+      transition: opacity 0.15s, transform 0.1s;
       flex-shrink: 0;
     }
 
-    .btn-send:hover { background: var(--teal-mid); }
-    .btn-send:active { transform: scale(0.94); }
-    .btn-send:disabled { background: var(--text-light); cursor: not-allowed; transform: none; }
+    .btn-send:hover { opacity: 0.88; }
+    .btn-send:active { transform: scale(0.93); }
+    .btn-send:disabled { opacity: 0.38; cursor: not-allowed; transform: none; }
 
-    .btn-send svg { width: 16px; height: 16px; }
-
-    .input-hint {
+    .search-hint {
       font-size: 11px;
-      color: var(--text-light);
-      margin-top: 6px;
-      padding-left: 2px;
+      color: var(--stone);
+      margin-top: 8px;
+      padding-left: 4px;
     }
 
-    /* ── Toast ────────────────────────────────────────────────────────────── */
+    /* Example pill buttons */
+    .example-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 18px;
+    }
+
+    .example-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--stone);
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 5px 13px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+
+    .example-pill:hover {
+      color: var(--accent);
+      border-color: rgba(124,58,237,0.30);
+      background: var(--accent-light);
+    }
+
+    /* ── Pipeline breadcrumb ─────────────────────────────────────────── */
+    .pipeline {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 40px 28px;
+      display: none;
+    }
+
+    .pipeline.visible { display: block; }
+
+    .pipeline-track {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 16px;
+      overflow-x: auto;
+    }
+
+    .pipeline-track::-webkit-scrollbar { display: none; }
+
+    .pipe-step {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .pipe-inner {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--stone);
+      padding: 4px 10px;
+      border-radius: 20px;
+      transition: color 0.2s, background 0.2s;
+      white-space: nowrap;
+    }
+
+    .pipe-inner .step-icon { display: flex; align-items: center; }
+
+    /* states */
+    .pipe-step.running .pipe-inner {
+      color: var(--accent);
+      background: var(--accent-light);
+      animation: pulse-step 1.4s ease-in-out infinite;
+    }
+
+    @keyframes pulse-step {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
+    }
+
+    .pipe-step.done .pipe-inner {
+      color: var(--green);
+      background: var(--green-light);
+    }
+
+    .pipe-step.cache-hit .pipe-inner {
+      color: var(--amber);
+      background: var(--amber-light);
+    }
+
+    .pipe-arrow {
+      color: var(--border);
+      margin: 0 2px;
+      flex-shrink: 0;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .step-latency {
+      font-size: 10px;
+      font-weight: 400;
+      opacity: 0.75;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .step-badge {
+      font-size: 9px;
+      font-weight: 600;
+      padding: 1px 5px;
+      border-radius: 10px;
+      background: var(--amber);
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Empty state ─────────────────────────────────────────────────── */
+    .empty-state {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 8px 40px 32px;
+      color: var(--stone);
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .empty-state-icon {
+      display: flex;
+      align-items: center;
+      color: var(--border);
+    }
+
+    /* ── Answer panel ────────────────────────────────────────────────── */
+    .answer-panel {
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 0 40px 32px;
+      display: none;
+    }
+
+    .answer-panel.visible { display: block; }
+
+    .answer-card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Cache hit banner */
+    .cache-banner {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 18px;
+      background: var(--amber-light);
+      border-bottom: 1px solid rgba(217,119,6,0.20);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--amber);
+    }
+
+    .cache-banner.visible { display: flex; }
+
+    /* Source pills row */
+    .source-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 14px 18px 12px;
+      border-bottom: 1px solid var(--border);
+      min-height: 0;
+    }
+
+    .source-row:empty { display: none; }
+
+    .src-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-light);
+      border: 1px solid rgba(124,58,237,0.18);
+      border-radius: 20px;
+      padding: 3px 9px;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      cursor: default;
+    }
+
+    .src-rank {
+      font-weight: 600;
+      opacity: 0.6;
+      font-size: 10px;
+    }
+
+    /* Answer body */
+    .answer-body {
+      padding: 18px 20px 14px;
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--ink);
+      min-height: 48px;
+    }
+
+    .answer-text {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* Streaming cursor */
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 15px;
+      background: var(--accent);
+      vertical-align: text-bottom;
+      border-radius: 1px;
+      animation: blink 0.75s step-end infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Answer footer */
+    .answer-footer {
+      padding: 10px 18px 12px;
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--stone);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 16px;
+      align-items: center;
+    }
+
+    .footer-dot {
+      display: inline-block;
+      width: 3px;
+      height: 3px;
+      border-radius: 50%;
+      background: var(--border);
+      vertical-align: middle;
+    }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────── */
+    .sidebar {
+      width: 280px;
+      flex-shrink: 0;
+      border-left: 1px solid var(--border);
+      background: #fff;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .sidebar-section {
+      padding: 20px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-section:last-child { border-bottom: none; }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--stone);
+      margin-bottom: 14px;
+    }
+
+    /* Big stat */
+    .big-stat {
+      margin-bottom: 16px;
+    }
+
+    .big-stat-value {
+      font-size: 34px;
+      font-weight: 600;
+      color: var(--ink);
+      line-height: 1;
+      letter-spacing: -0.02em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .big-stat-label {
+      font-size: 12px;
+      color: var(--stone);
+      margin-top: 4px;
+    }
+
+    /* Hit rate bar */
+    .hit-bar-track {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 8px;
+      overflow: hidden;
+    }
+
+    .hit-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 2px;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    /* Stat rows */
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 9px;
+    }
+
+    .stat-row:last-child { margin-bottom: 0; }
+
+    .stat-label { font-size: 12px; color: var(--stone); }
+
+    .stat-val {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ink);
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Flush cache button */
+    .btn-flush {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 500;
+      font-family: var(--font-body);
+      color: var(--stone);
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s, background 0.15s;
+    }
+
+    .btn-flush:hover {
+      color: #EF4444;
+      border-color: rgba(239,68,68,0.35);
+      background: rgba(239,68,68,0.05);
+    }
+
+    .btn-flush:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ── Toast ───────────────────────────────────────────────────────── */
     #toast {
       position: fixed;
       bottom: 24px;
-      right: 24px;
-      background: #1C2127;
-      color: #F0EDE6;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--ink);
+      color: var(--paper);
       font-size: 12px;
-      padding: 9px 14px;
+      font-weight: 500;
+      padding: 9px 16px;
       border-radius: var(--radius-sm);
       box-shadow: var(--shadow-md);
       display: none;
       z-index: 1000;
-      max-width: 280px;
-      animation: slideUp 0.2s ease;
+      white-space: nowrap;
+      transition: opacity 0.2s, transform 0.2s;
     }
 
-    #toast.show { display: block; }
-
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
+    #toast.show {
+      display: block;
+      animation: toast-in 0.2s ease forwards;
     }
 
-    /* ── Scrollbar ────────────────────────────────────────────────────────── */
-    .chat-area::-webkit-scrollbar,
-    .sidebar::-webkit-scrollbar {
-      width: 5px;
-    }
-    .chat-area::-webkit-scrollbar-track,
-    .sidebar::-webkit-scrollbar-track {
-      background: transparent;
-    }
-    .chat-area::-webkit-scrollbar-thumb,
-    .sidebar::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 3px;
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to   { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 
-    /* ── Responsive ───────────────────────────────────────────────────────── */
-    @media (max-width: 680px) {
-      .sidebar { width: 0; overflow: hidden; border: none; }
-      .chat-area { padding: 16px 16px 10px; }
-      .input-area { padding: 10px 16px 16px; }
-      .pipeline-bar { padding: 8px 16px; }
+    /* ── Responsive ──────────────────────────────────────────────────── */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+    }
+
+    @media (max-width: 600px) {
+      .hero { padding: 28px 20px 20px; }
+      .pipeline, .answer-panel, .empty-state { padding-left: 20px; padding-right: 20px; }
+      .header { padding: 14px 20px; }
     }
   </style>
 </head>
@@ -619,227 +662,302 @@
 
 <div class="app">
 
-  <!-- ── Sidebar ─────────────────────────────────────────────────────────── -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <h1>Hybrid RAG Gateway</h1>
-      <div class="subtitle">BM25 + Dense · RRF · Semantic Cache</div>
-    </div>
+  <!-- ── Main column ──────────────────────────────────────────────────── -->
+  <div class="main">
 
-    <!-- Connection status -->
-    <div class="sidebar-section" style="padding-bottom:12px;">
-      <span class="status-dot checking" id="status-dot"></span>
-      <span class="status-text" id="status-text">Checking backend…</span>
-    </div>
-
-    <!-- Live stats -->
-    <div class="sidebar-section">
-      <div class="section-label">System Stats</div>
-
-      <div class="stat-row">
-        <span class="stat-label">Total queries</span>
-        <span class="stat-value teal" id="stat-total">—</span>
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">RAG Gateway</h1>
+      <span class="header-badge">BM25 · FAISS · RRF</span>
+      <div class="header-right">
+        <span class="status-dot checking" id="status-dot"></span>
+        <span class="status-label" id="status-label">Checking…</span>
       </div>
+    </header>
 
-      <div class="stat-row" style="align-items:flex-start;">
-        <span class="stat-label">Cache hits</span>
-        <div style="text-align:right;">
-          <span class="stat-value amber" id="stat-hit-frac">— / —</span>
-          <div class="hit-rate-bar">
-            <div class="hit-rate-fill" id="hit-rate-fill" style="width:0%"></div>
+    <!-- Scrollable content -->
+    <div class="scroll-area" id="scroll-area">
+
+      <!-- Hero: search -->
+      <div class="hero">
+        <div class="search-wrap">
+          <span class="search-icon">
+            <i data-lucide="search" style="width:18px;height:18px;"></i>
+          </span>
+          <textarea
+            id="query-input"
+            rows="1"
+            placeholder="Ask anything about distributed systems, RAG, LLM infrastructure…"
+            onkeydown="handleKeydown(event)"
+            oninput="autoResize(this)"
+          ></textarea>
+          <div class="search-actions">
+            <div class="topk-wrap">
+              <label for="top-k-input">top‑k</label>
+              <input type="number" id="top-k-input" value="5" min="1" max="15" />
+            </div>
+            <button class="btn-send" id="btn-send" onclick="submitQuery()" title="Search (Enter)">
+              <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+            </button>
           </div>
+        </div>
+
+        <div class="search-hint">Enter to search · Shift+Enter for new line</div>
+
+        <div class="example-pills">
+          <button class="example-pill" onclick="loadExample(this)">
+            <i data-lucide="sparkles" style="width:12px;height:12px;"></i>
+            How does PagedAttention work?
+          </button>
+          <button class="example-pill" onclick="loadExample(this)">
+            <i data-lucide="sparkles" style="width:12px;height:12px;"></i>
+            What is Reciprocal Rank Fusion?
+          </button>
+          <button class="example-pill" onclick="loadExample(this)">
+            <i data-lucide="sparkles" style="width:12px;height:12px;"></i>
+            Explain vector indexing in FAISS
+          </button>
+          <button class="example-pill" onclick="loadExample(this)">
+            <i data-lucide="sparkles" style="width:12px;height:12px;"></i>
+            How do RAG systems handle context length?
+          </button>
         </div>
       </div>
 
+      <!-- Pipeline breadcrumb (hidden until search) -->
+      <div class="pipeline" id="pipeline">
+        <div class="pipeline-track">
+
+          <div class="pipe-step" id="step-cache">
+            <div class="pipe-inner">
+              <span class="step-icon"><i data-lucide="database" style="width:12px;height:12px;"></i></span>
+              Cache Check
+              <span class="step-latency" id="step-cache-ms"></span>
+            </div>
+          </div>
+
+          <span class="pipe-arrow">›</span>
+
+          <div class="pipe-step" id="step-retrieve">
+            <div class="pipe-inner">
+              <span class="step-icon"><i data-lucide="layers" style="width:12px;height:12px;"></i></span>
+              Retrieval
+              <span class="step-latency" id="step-retrieve-ms"></span>
+            </div>
+          </div>
+
+          <span class="pipe-arrow">›</span>
+
+          <div class="pipe-step" id="step-rerank">
+            <div class="pipe-inner">
+              <span class="step-icon"><i data-lucide="bar-chart-2" style="width:12px;height:12px;"></i></span>
+              Rerank
+              <span class="step-latency" id="step-rerank-ms"></span>
+            </div>
+          </div>
+
+          <span class="pipe-arrow">›</span>
+
+          <div class="pipe-step" id="step-stream">
+            <div class="pipe-inner">
+              <span class="step-icon"><i data-lucide="zap" style="width:12px;height:12px;"></i></span>
+              Stream
+              <span class="step-latency" id="step-stream-ms"></span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div class="empty-state" id="empty-state">
+        <span class="empty-state-icon">
+          <i data-lucide="corner-down-right" style="width:14px;height:14px;"></i>
+        </span>
+        Ask a question to see the retrieval pipeline in action.
+      </div>
+
+      <!-- Answer panel (hidden until search) -->
+      <div class="answer-panel" id="answer-panel">
+
+        <!-- Cache hit banner -->
+        <div class="cache-banner" id="cache-banner">
+          <i data-lucide="zap" style="width:13px;height:13px;"></i>
+          Answered from cache — same question asked recently
+        </div>
+
+        <div class="answer-card">
+          <!-- Source pills -->
+          <div class="source-row" id="source-row"></div>
+
+          <!-- Answer body -->
+          <div class="answer-body" id="answer-body">
+            <span class="answer-text" id="answer-text"></span>
+            <span class="cursor" id="cursor" style="display:none;"></span>
+          </div>
+
+          <!-- Footer -->
+          <div class="answer-footer" id="answer-footer" style="display:none;">
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- /scroll-area -->
+  </div><!-- /main -->
+
+  <!-- ── Stats sidebar ─────────────────────────────────────────────────── -->
+  <aside class="sidebar">
+
+    <!-- Cache hit rate -->
+    <div class="sidebar-section">
+      <div class="section-label">Cache Hit Rate</div>
+      <div class="big-stat">
+        <div class="big-stat-value" id="stat-hit-rate">—</div>
+        <div class="big-stat-label" id="stat-hit-frac">— hits of — requests</div>
+        <div class="hit-bar-track">
+          <div class="hit-bar-fill" id="hit-bar-fill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Other stats -->
+    <div class="sidebar-section">
+      <div class="section-label">Performance</div>
+
       <div class="stat-row">
         <span class="stat-label">Avg latency</span>
-        <span class="stat-value" id="stat-latency">—</span>
+        <span class="stat-val" id="stat-latency">—</span>
+      </div>
+
+      <div class="stat-row">
+        <span class="stat-label">Total queries</span>
+        <span class="stat-val" id="stat-total">—</span>
       </div>
 
       <div class="stat-row">
         <span class="stat-label">Avg retrieval</span>
-        <span class="stat-value" id="stat-retrieval">—</span>
+        <span class="stat-val" id="stat-retrieval">—</span>
       </div>
 
       <div class="stat-row">
         <span class="stat-label">Avg rerank</span>
-        <span class="stat-value" id="stat-rerank">—</span>
+        <span class="stat-val" id="stat-rerank">—</span>
       </div>
     </div>
 
-    <!-- Sample queries -->
-    <div class="sidebar-section">
-      <div class="section-label">Try a query</div>
-      <button class="sample-query" onclick="loadSample(this)">How does Reciprocal Rank Fusion work in hybrid search?</button>
-      <button class="sample-query" onclick="loadSample(this)">What is FAISS and how does it scale to millions of vectors?</button>
-      <button class="sample-query" onclick="loadSample(this)">Explain semantic caching for LLM cost reduction</button>
-      <button class="sample-query" onclick="loadSample(this)">How does BM25 differ from TF-IDF for document retrieval?</button>
-      <button class="sample-query" onclick="loadSample(this)">What is KV cache and how does it speed up transformer inference?</button>
-    </div>
-
-    <!-- Cache control -->
+    <!-- Flush cache -->
     <div class="sidebar-section">
       <div class="section-label">Cache</div>
-      <button class="btn-clear" id="btn-clear" onclick="clearCache()">
-        <span class="btn-clear-icon">⊘</span>
-        Clear semantic cache
+      <button class="btn-flush" id="btn-flush" onclick="clearCache()">
+        <i data-lucide="trash-2" style="width:12px;height:12px;"></i>
+        Flush cache
       </button>
     </div>
+
   </aside>
 
-  <!-- ── Main ────────────────────────────────────────────────────────────── -->
-  <main class="main">
+</div><!-- /app -->
 
-    <!-- Pipeline trail -->
-    <div class="pipeline-bar" id="pipeline-bar">
-      <div class="pipeline-step">
-        <span class="step-label" id="step-cache">Cache Check</span>
-        <span class="step-arrow">›</span>
-      </div>
-      <div class="pipeline-step">
-        <span class="step-label" id="step-retrieve">BM25 + Dense</span>
-        <span class="step-arrow">›</span>
-      </div>
-      <div class="pipeline-step">
-        <span class="step-label" id="step-rrf">RRF Fusion</span>
-        <span class="step-arrow">›</span>
-      </div>
-      <div class="pipeline-step">
-        <span class="step-label" id="step-rerank">Rerank</span>
-        <span class="step-arrow">›</span>
-      </div>
-      <div class="pipeline-step">
-        <span class="step-label" id="step-stream">Stream</span>
-      </div>
-    </div>
-
-    <!-- Chat messages -->
-    <div class="chat-area" id="chat-area">
-      <div class="empty-state" id="empty-state">
-        <div class="empty-icon">◈</div>
-        <h2>Hybrid Retrieval, Ready</h2>
-        <p>Ask anything about distributed systems, vector databases, LLM infrastructure, or RAG architecture. Retrieval combines dense vectors and BM25 lexical scoring.</p>
-      </div>
-    </div>
-
-    <!-- Input -->
-    <div class="input-area">
-      <div class="input-wrapper">
-        <textarea
-          id="query-input"
-          placeholder="Ask about RAG systems, vector search, distributed systems…"
-          rows="1"
-          onkeydown="handleKeydown(event)"
-          oninput="autoResize(this)"
-        ></textarea>
-        <div class="input-controls">
-          <div class="top-k-wrap">
-            <label for="top-k-input">top‑k</label>
-            <input type="number" id="top-k-input" value="5" min="1" max="15" />
-          </div>
-          <button class="btn-send" id="btn-send" onclick="submitQuery()" title="Send (Enter)">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
-        </div>
-      </div>
-      <div class="input-hint">Enter to send · Shift+Enter for new line</div>
-    </div>
-  </main>
-</div>
-
-<!-- Toast -->
 <div id="toast"></div>
 
 <script>
-  /* ── Config ─────────────────────────────────────────────────────────────── */
-  const API_BASE = '';
+  /* ── Init Lucide icons ───────────────────────────────────────────────── */
+  lucide.createIcons();
+
+  /* ── State ───────────────────────────────────────────────────────────── */
   let isStreaming = false;
   let statsInterval = null;
 
-  /* ── DOM refs ───────────────────────────────────────────────────────────── */
-  const chatArea   = document.getElementById('chat-area');
-  const emptyState = document.getElementById('empty-state');
-  const queryInput = document.getElementById('query-input');
-  const btnSend    = document.getElementById('btn-send');
+  /* ── DOM refs ────────────────────────────────────────────────────────── */
+  const queryInput  = document.getElementById('query-input');
+  const btnSend     = document.getElementById('btn-send');
+  const scrollArea  = document.getElementById('scroll-area');
+  const pipeline    = document.getElementById('pipeline');
+  const answerPanel = document.getElementById('answer-panel');
+  const emptyState  = document.getElementById('empty-state');
+  const answerText  = document.getElementById('answer-text');
+  const cursor      = document.getElementById('cursor');
+  const sourceRow   = document.getElementById('source-row');
+  const cacheBanner = document.getElementById('cache-banner');
+  const answerFooter= document.getElementById('answer-footer');
 
-  const stepEls = {
-    cache:    document.getElementById('step-cache'),
-    retrieve: document.getElementById('step-retrieve'),
-    rrf:      document.getElementById('step-rrf'),
-    rerank:   document.getElementById('step-rerank'),
-    stream:   document.getElementById('step-stream'),
-  };
+  /* ── Pipeline step helpers ───────────────────────────────────────────── */
+  const STEPS = ['cache', 'retrieve', 'rerank', 'stream'];
 
-  /* ── Pipeline step management ───────────────────────────────────────────── */
   function resetPipeline() {
-    Object.values(stepEls).forEach(el => {
-      el.classList.remove('active', 'done');
+    STEPS.forEach(s => {
+      const el = document.getElementById('step-' + s);
+      el.classList.remove('running', 'done', 'cache-hit');
+      document.getElementById('step-' + s + '-ms').textContent = '';
     });
   }
 
-  function activateStep(name) {
-    if (stepEls[name]) stepEls[name].classList.add('active');
+  function runStep(name) {
+    const el = document.getElementById('step-' + name);
+    el.classList.remove('done', 'cache-hit');
+    el.classList.add('running');
   }
 
-  function completeStep(name) {
-    if (stepEls[name]) {
-      stepEls[name].classList.remove('active');
-      stepEls[name].classList.add('done');
+  function doneStep(name, ms, isCacheHit = false) {
+    const el = document.getElementById('step-' + name);
+    el.classList.remove('running');
+    el.classList.add(isCacheHit ? 'cache-hit' : 'done');
+    if (ms != null) {
+      document.getElementById('step-' + name + '-ms').textContent = fmt_ms(ms);
     }
   }
 
-  /* ── Health & stats polling ─────────────────────────────────────────────── */
+  /* ── Health & stats ──────────────────────────────────────────────────── */
   async function checkHealth() {
-    const dot  = document.getElementById('status-dot');
-    const text = document.getElementById('status-text');
+    const dot   = document.getElementById('status-dot');
+    const label = document.getElementById('status-label');
     dot.className = 'status-dot checking';
-    text.textContent = 'Checking backend…';
+    label.textContent = 'Checking…';
     try {
-      const res = await fetch(`${API_BASE}/api/health`, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch('/api/health', { signal: AbortSignal.timeout(3000) });
       if (res.ok) {
         dot.className = 'status-dot online';
-        text.textContent = 'Backend online';
+        label.textContent = 'Online';
         fetchStats();
         if (!statsInterval) statsInterval = setInterval(fetchStats, 8000);
       } else {
-        throw new Error('Non-OK');
+        throw new Error('not ok');
       }
     } catch {
       dot.className = 'status-dot offline';
-      text.textContent = 'Backend offline';
+      label.textContent = 'Offline';
     }
   }
 
   async function fetchStats() {
     try {
-      const res = await fetch(`${API_BASE}/api/stats`);
+      const res = await fetch('/api/stats');
       if (!res.ok) return;
-      const data = await res.json();
-      document.getElementById('stat-total').textContent    = data.total_queries;
-      const hits   = data.cache.hits;
-      const total  = data.cache.total_requests;
-      document.getElementById('stat-hit-frac').textContent = `${hits} / ${total}`;
-      const rate = data.cache.hit_rate * 100;
-      document.getElementById('hit-rate-fill').style.width = rate.toFixed(1) + '%';
-      document.getElementById('stat-latency').textContent  = fmt_ms(data.avg_latency_ms);
-      document.getElementById('stat-retrieval').textContent= fmt_ms(data.avg_retrieval_latency_ms);
-      document.getElementById('stat-rerank').textContent   = fmt_ms(data.avg_rerank_latency_ms);
+      const d = await res.json();
+
+      document.getElementById('stat-total').textContent     = d.total_queries ?? '—';
+      document.getElementById('stat-latency').textContent   = fmt_ms(d.avg_latency_ms);
+      document.getElementById('stat-retrieval').textContent = fmt_ms(d.avg_retrieval_latency_ms);
+      document.getElementById('stat-rerank').textContent    = fmt_ms(d.avg_rerank_latency_ms);
+
+      const hits  = d.cache?.hits ?? 0;
+      const total = d.cache?.total_requests ?? 0;
+      const rate  = d.cache?.hit_rate ?? 0;
+
+      const pct = (rate * 100).toFixed(0) + '%';
+      document.getElementById('stat-hit-rate').textContent  = total > 0 ? pct : '—';
+      document.getElementById('stat-hit-frac').textContent  = total > 0
+        ? `${hits} hits of ${total} requests`
+        : 'No requests yet';
+      document.getElementById('hit-bar-fill').style.width   = (rate * 100).toFixed(1) + '%';
     } catch { /* silent */ }
   }
 
-  function fmt_ms(ms) {
-    if (!ms && ms !== 0) return '—';
-    if (ms < 1) return '<1ms';
-    return Math.round(ms) + 'ms';
-  }
-
-  /* ── Input helpers ───────────────────────────────────────────────────────── */
+  /* ── Input helpers ───────────────────────────────────────────────────── */
   function autoResize(el) {
     el.style.height = 'auto';
-    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
   }
 
   function handleKeydown(e) {
@@ -849,122 +967,36 @@
     }
   }
 
-  function loadSample(btn) {
-    queryInput.value = btn.textContent.trim();
+  function loadExample(btn) {
+    // Strip icon text — take only the text node content
+    const text = Array.from(btn.childNodes)
+      .filter(n => n.nodeType === Node.TEXT_NODE)
+      .map(n => n.textContent.trim())
+      .join(' ')
+      .trim();
+    queryInput.value = text;
     autoResize(queryInput);
     queryInput.focus();
   }
 
-  /* ── Message rendering ───────────────────────────────────────────────────── */
-  function hideEmpty() {
-    if (emptyState) emptyState.style.display = 'none';
+  /* ── UI state helpers ────────────────────────────────────────────────── */
+  function showSearching() {
+    emptyState.style.display = 'none';
+    pipeline.classList.add('visible');
+    answerPanel.classList.add('visible');
+    cacheBanner.classList.remove('visible');
+    sourceRow.innerHTML = '';
+    answerText.textContent = '';
+    answerFooter.style.display = 'none';
+    answerFooter.innerHTML = '';
+    cursor.style.display = 'inline-block';
   }
 
-  function appendUserMessage(text) {
-    hideEmpty();
-    const el = document.createElement('div');
-    el.className = 'message user';
-    el.innerHTML = `
-      <div class="bubble">${escHtml(text)}</div>
-      <div class="msg-meta">${nowStr()}</div>
-    `;
-    chatArea.appendChild(el);
-    scrollBottom();
+  function scrollBottom() {
+    scrollArea.scrollTop = scrollArea.scrollHeight;
   }
 
-  function createAssistantMessage(isCacheHit, cacheLatencyMs) {
-    hideEmpty();
-    const wrapper = document.createElement('div');
-    wrapper.className = 'message assistant';
-
-    const bubble = document.createElement('div');
-    bubble.className = 'bubble';
-
-    if (isCacheHit) {
-      const badge = document.createElement('div');
-      badge.className = 'cache-badge';
-      badge.textContent = `⚡ Cache Hit — ${fmt_ms(cacheLatencyMs)}`;
-      bubble.appendChild(badge);
-    }
-
-    const answerEl = document.createElement('div');
-    answerEl.className = 'answer-text';
-    bubble.appendChild(answerEl);
-
-    const cursor = document.createElement('span');
-    cursor.className = 'cursor';
-    bubble.appendChild(cursor);
-
-    wrapper.appendChild(bubble);
-    chatArea.appendChild(wrapper);
-    scrollBottom();
-    return { wrapper, bubble, answerEl, cursor };
-  }
-
-  function finalizeMessage(msgCtx, doneData) {
-    const { wrapper, bubble, answerEl, cursor } = msgCtx;
-    cursor.remove();
-
-    // Source pills
-    const docs = doneData.docs || [];
-    if (docs.length > 0) {
-      const pillsEl = document.createElement('div');
-      pillsEl.className = 'source-pills';
-      docs.slice(0, 8).forEach((doc, i) => {
-        const pill = document.createElement('span');
-        pill.className = 'source-pill';
-        pill.title = doc.source || '';
-        pill.innerHTML = `<span class="pill-rank">${i+1}</span> ${escHtml(doc.title)}`;
-        pillsEl.appendChild(pill);
-      });
-      bubble.appendChild(pillsEl);
-    }
-
-    // Latency breakdown
-    const ret_ms   = doneData.retrieval_latency_ms || 0;
-    const rnk_ms   = doneData.rerank_latency_ms    || 0;
-    const str_ms   = doneData.stream_latency_ms     || 0;
-    const cache_ms = doneData.cache_hit ? (doneData.latency_ms - str_ms) : 0;
-    const total    = doneData.latency_ms || 0;
-    const maxVal   = Math.max(ret_ms, rnk_ms, str_ms, cache_ms, 1);
-
-    const latEl = document.createElement('div');
-    latEl.className = 'latency-row';
-
-    const items = doneData.cache_hit
-      ? [
-          { label: 'Cache',   ms: cache_ms, cls: 'lt-cache'  },
-          { label: 'Stream',  ms: str_ms,   cls: 'lt-stream' },
-          { label: 'Total',   ms: total,    cls: ''          },
-        ]
-      : [
-          { label: 'Retrieval', ms: ret_ms, cls: 'lt-ret'    },
-          { label: 'Rerank',    ms: rnk_ms, cls: 'lt-rerank' },
-          { label: 'Stream',    ms: str_ms, cls: 'lt-stream' },
-          { label: 'Total',     ms: total,  cls: ''          },
-        ];
-
-    items.forEach(({ label, ms, cls }) => {
-      const barWidth = cls ? Math.max(2, Math.round((ms / maxVal) * 48)) : 0;
-      latEl.innerHTML += `
-        <span class="latency-item">
-          ${cls ? `<span class="latency-bar ${cls}" style="width:${barWidth}px"></span>` : ''}
-          <span class="latency-val">${label}: ${fmt_ms(ms)}</span>
-        </span>`;
-    });
-
-    bubble.appendChild(latEl);
-
-    const meta = document.createElement('div');
-    meta.className = 'msg-meta';
-    meta.textContent = nowStr();
-    wrapper.appendChild(meta);
-
-    scrollBottom();
-    fetchStats();
-  }
-
-  /* ── Core query stream ───────────────────────────────────────────────────── */
+  /* ── Query submission + SSE streaming ───────────────────────────────── */
   async function submitQuery() {
     if (isStreaming) return;
     const query = queryInput.value.trim();
@@ -976,28 +1008,25 @@
     btnSend.disabled = true;
     queryInput.value = '';
     autoResize(queryInput);
+
     resetPipeline();
+    showSearching();
+    runStep('cache');
+    scrollBottom();
 
-    appendUserMessage(query);
-    activateStep('cache');
-
-    let msgCtx = null;
     let isCacheHit = false;
-    let cacheLatencyMs = 0;
+    let donePayload = null;
 
     try {
-      // Use fetch + ReadableStream for SSE (EventSource doesn't support POST)
-      const response = await fetch(`${API_BASE}/api/query`, {
+      const response = await fetch('/api/query', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query, top_k: topK }),
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-      const reader = response.body.getReader();
+      const reader  = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
 
@@ -1007,13 +1036,13 @@
 
         buffer += decoder.decode(value, { stream: true });
         const parts = buffer.split('\n\n');
-        buffer = parts.pop(); // keep incomplete last part
+        buffer = parts.pop();
 
         for (const part of parts) {
           if (!part.trim()) continue;
           const lines = part.split('\n');
           let eventName = '';
-          let dataStr = '';
+          let dataStr   = '';
 
           for (const line of lines) {
             if (line.startsWith('event: ')) eventName = line.slice(7).trim();
@@ -1025,109 +1054,128 @@
           let payload;
           try { payload = JSON.parse(dataStr); } catch { continue; }
 
-          handleEvent(eventName, payload);
+          switch (eventName) {
+
+            case 'cache_hit':
+              isCacheHit = true;
+              doneStep('cache', payload.latency_ms, true);
+              doneStep('retrieve');
+              doneStep('rerank');
+              runStep('stream');
+              cacheBanner.classList.add('visible');
+              break;
+
+            case 'retrieval_start':
+              doneStep('cache', null, false);
+              runStep('retrieve');
+              break;
+
+            case 'retrieval_done':
+              doneStep('retrieve', payload.latency_ms);
+              runStep('rerank');
+              break;
+
+            case 'rerank_done':
+              doneStep('rerank', payload.latency_ms);
+              runStep('stream');
+              break;
+
+            case 'token':
+              answerText.textContent += payload.text;
+              scrollBottom();
+              break;
+
+            case 'done':
+              donePayload = payload;
+              doneStep('stream', payload.stream_latency_ms);
+              cursor.style.display = 'none';
+              finalizeAnswer(payload, isCacheHit);
+              fetchStats();
+              break;
+
+            case 'error':
+              showToast('Error: ' + (payload.message || 'unknown'));
+              cursor.style.display = 'none';
+              resetPipeline();
+              break;
+          }
         }
       }
+
     } catch (err) {
-      showToast(`Error: ${err.message}`);
+      showToast('Request failed: ' + err.message);
+      cursor.style.display = 'none';
       resetPipeline();
     } finally {
       isStreaming = false;
       btnSend.disabled = false;
     }
-
-    /* ── event dispatch ── */
-    function handleEvent(name, payload) {
-      switch (name) {
-        case 'cache_hit':
-          isCacheHit = true;
-          cacheLatencyMs = payload.latency_ms;
-          completeStep('cache');
-          completeStep('retrieve');
-          completeStep('rrf');
-          completeStep('rerank');
-          activateStep('stream');
-          msgCtx = createAssistantMessage(true, cacheLatencyMs);
-          break;
-
-        case 'retrieval_start':
-          completeStep('cache');
-          activateStep('retrieve');
-          if (!msgCtx) msgCtx = createAssistantMessage(false, 0);
-          break;
-
-        case 'retrieval_done':
-          completeStep('retrieve');
-          activateStep('rrf');
-          // RRF completes as part of retrieval (done in the same call)
-          setTimeout(() => {
-            completeStep('rrf');
-            activateStep('rerank');
-          }, 60);
-          break;
-
-        case 'rerank_done':
-          completeStep('rrf');
-          completeStep('rerank');
-          activateStep('stream');
-          if (!msgCtx) msgCtx = createAssistantMessage(false, 0);
-          break;
-
-        case 'token':
-          if (msgCtx) {
-            msgCtx.answerEl.textContent += payload.text;
-            scrollBottom();
-          }
-          break;
-
-        case 'done':
-          completeStep('stream');
-          if (msgCtx) finalizeMessage(msgCtx, payload);
-          msgCtx = null;
-          break;
-
-        case 'error':
-          showToast(`Backend error: ${payload.message}`);
-          resetPipeline();
-          break;
-      }
-    }
   }
 
-  /* ── Cache clear ──────────────────────────────────────────────────────────── */
+  function finalizeAnswer(data, isCacheHit) {
+    const docs = data.docs || [];
+
+    // Source pills
+    if (docs.length > 0) {
+      docs.slice(0, 8).forEach((doc, i) => {
+        const pill = document.createElement('span');
+        pill.className = 'src-pill';
+        pill.title = doc.source || '';
+        pill.innerHTML = `<span class="src-rank">${i + 1}</span> ${escHtml(doc.title || doc.source || 'Document')}`;
+        sourceRow.appendChild(pill);
+      });
+    }
+
+    // Footer line
+    const parts = [];
+    if (docs.length > 0) parts.push(`Retrieved from ${docs.length} document${docs.length !== 1 ? 's' : ''}`);
+    if (data.rerank_latency_ms) parts.push(`Reranked in ${fmt_ms(data.rerank_latency_ms)}`);
+    parts.push(`Cached: ${isCacheHit ? 'Yes' : 'No'}`);
+    if (data.latency_ms) parts.push(`Total ${fmt_ms(data.latency_ms)}`);
+
+    answerFooter.innerHTML = parts.map((p, i) =>
+      i < parts.length - 1
+        ? `${escHtml(p)} <span class="footer-dot"></span>`
+        : escHtml(p)
+    ).join(' ');
+    answerFooter.style.display = 'flex';
+
+    scrollBottom();
+  }
+
+  /* ── Cache flush ─────────────────────────────────────────────────────── */
   async function clearCache() {
-    const btn = document.getElementById('btn-clear');
-    btn.classList.add('loading');
-    btn.textContent = 'Clearing…';
+    const btn = document.getElementById('btn-flush');
+    btn.disabled = true;
+    btn.innerHTML = '<i data-lucide="loader" style="width:12px;height:12px;"></i> Flushing…';
+    lucide.createIcons();
     try {
-      const res = await fetch(`${API_BASE}/api/cache`, { method: 'DELETE' });
+      const res  = await fetch('/api/cache', { method: 'DELETE' });
       const data = await res.json();
-      showToast(`Cache cleared — ${data.entries_removed} entries removed`);
+      showToast(`Cache flushed — ${data.entries_removed ?? 0} entries removed`);
       fetchStats();
     } catch {
       showToast('Could not reach backend');
     } finally {
-      btn.classList.remove('loading');
-      btn.innerHTML = '<span class="btn-clear-icon">⊘</span> Clear semantic cache';
+      btn.disabled = false;
+      btn.innerHTML = '<i data-lucide="trash-2" style="width:12px;height:12px;"></i> Flush cache';
+      lucide.createIcons();
     }
   }
 
-  /* ── Utilities ─────────────────────────────────────────────────────────────── */
+  /* ── Utilities ───────────────────────────────────────────────────────── */
+  function fmt_ms(ms) {
+    if (ms == null || ms === '') return '—';
+    if (ms < 1) return '<1ms';
+    return Math.round(ms) + 'ms';
+  }
+
   function escHtml(str) {
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
-  }
-
-  function nowStr() {
-    const d = new Date();
-    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  }
-
-  function scrollBottom() {
-    chatArea.scrollTop = chatArea.scrollHeight;
   }
 
   let toastTimer = null;
@@ -1139,9 +1187,8 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
   }
 
-  /* ── Init ───────────────────────────────────────────────────────────────────── */
+  /* ── Bootstrap ───────────────────────────────────────────────────────── */
   checkHealth();
-  setTimeout(checkHealth, 4000);
 </script>
 </body>
 </html>
