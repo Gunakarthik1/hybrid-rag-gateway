@@ -6,7 +6,7 @@
   <title>Hybrid RAG Gateway</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -42,11 +42,17 @@
 
       --radius-sm:   6px;
       --radius:      8px;
-      --radius-lg:   12px;
-      --radius-xl:   16px;
+      --radius-lg:   1.25rem;
+      --radius-xl:   1.5rem;
+      --radius-card: 1.25rem;
+      --radius-pill: 50rem;
 
       --font-mono:   'JetBrains Mono', 'Fira Code', monospace;
-      --font:        'Inter', system-ui, sans-serif;
+      --font:        'Nunito', system-ui, sans-serif;
+    }
+
+    html {
+      scroll-behavior: smooth;
     }
 
     html, body {
@@ -57,6 +63,7 @@
       font-size: 14px;
       line-height: 1.6;
       -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
     }
 
     /* ── Scrollbars ─────────────────────────── */
@@ -205,7 +212,7 @@
       align-items: center;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-pill);
       transition: border-color 0.2s, box-shadow 0.2s;
     }
     .search-input-wrap:focus-within {
@@ -283,21 +290,22 @@
       align-items: center;
       gap: 6px;
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 700;
       font-family: var(--font);
       color: #fff;
       background: var(--purple);
       border: none;
-      border-radius: var(--radius-lg);
-      padding: 12px 20px;
+      border-radius: var(--radius-pill);
+      padding: 12px 24px;
       cursor: pointer;
-      transition: opacity 0.15s, transform 0.1s;
+      transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s;
       white-space: nowrap;
       flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(124,58,237,0.25);
     }
-    .btn-search:hover { opacity: 0.88; }
-    .btn-search:active { transform: scale(0.96); }
-    .btn-search:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .btn-search:hover { opacity: 0.92; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(124,58,237,0.4); }
+    .btn-search:active { transform: scale(0.96) translateY(0); box-shadow: none; }
+    .btn-search:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
     /* ── Cache hit banner ───────────────────── */
     .cache-hit-banner {
@@ -358,9 +366,21 @@
       align-items: center;
       justify-content: space-between;
       padding: 12px 14px;
-      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      border-radius: 1.5rem 1.5rem 0 0;
       border: 1px solid var(--border);
       border-bottom: none;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .col-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      border-radius: 1.5rem 1.5rem 0 0;
     }
 
     .col-header-left {
@@ -379,14 +399,17 @@
     }
 
     .col-header.bm25 { background: var(--blue-light); border-color: var(--blue-border); }
+    .col-header.bm25::before { background: linear-gradient(90deg, #1d4ed8, #60a5fa); }
     .col-header.bm25 .col-badge { background: var(--blue); color: #fff; }
     .col-header.bm25 .col-title { color: #60a5fa; }
 
     .col-header.faiss { background: var(--purple-light); border-color: var(--purple-border); }
+    .col-header.faiss::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
     .col-header.faiss .col-badge { background: var(--purple); color: #fff; }
     .col-header.faiss .col-title { color: #a78bfa; }
 
     .col-header.hybrid { background: var(--green-light); border-color: var(--green-border); }
+    .col-header.hybrid::before { background: linear-gradient(90deg, #059669, #34d399); }
     .col-header.hybrid .col-badge { background: var(--green); color: #fff; }
     .col-header.hybrid .col-title { color: #34d399; }
 
@@ -421,20 +444,26 @@
     .result-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
+      border-radius: var(--radius-card);
       padding: 14px;
-      transition: border-color 0.15s, transform 0.15s;
-      animation: card-in 0.3s ease both;
+      transition: border-color 0.15s, transform 0.2s, box-shadow 0.2s;
     }
 
     .result-card:hover {
       border-color: var(--border2);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
     }
 
-    @keyframes card-in {
-      from { opacity: 0; transform: translateY(8px); }
-      to   { opacity: 1; transform: translateY(0); }
+    /* ── Reveal animations ──────────────────── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(28px);
+      transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
 
     .result-card-header {
@@ -560,7 +589,7 @@
       margin-top: 20px;
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
+      border-radius: 1.5rem;
       overflow: hidden;
     }
 
@@ -634,7 +663,7 @@
     .modal {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
+      border-radius: 1.5rem;
       padding: 24px;
       width: 460px;
       max-width: calc(100vw - 32px);
@@ -857,21 +886,21 @@
 
 <!-- ── Status bar ──────────────────────────────────────────────────── -->
 <div class="status-bar" id="status-bar">
-  <div class="stat-chip">
+  <div class="stat-chip reveal">
     <span class="stat-chip-label">Cache:</span>
     <span class="stat-chip-value" id="sb-cache">—</span>
     <span class="stat-chip-label">entries</span>
   </div>
-  <div class="stat-chip">
+  <div class="stat-chip reveal">
     <span class="stat-chip-label">Hit Rate:</span>
     <span class="stat-chip-value" id="sb-hitrate">—</span>
   </div>
-  <div class="stat-chip">
+  <div class="stat-chip reveal">
     <span class="stat-chip-label">Corpus:</span>
     <span class="stat-chip-value" id="sb-corpus">—</span>
     <span class="stat-chip-label">docs</span>
   </div>
-  <div class="stat-chip">
+  <div class="stat-chip reveal">
     <span class="stat-chip-label">Total Queries:</span>
     <span class="stat-chip-value" id="sb-queries">—</span>
   </div>
@@ -916,6 +945,13 @@
   </div>
 </div>
 
+<!-- ── Wave divider ────────────────────────────────────────────────── -->
+<div style="line-height:0; background:var(--bg);">
+  <svg viewBox="0 0 1440 50" preserveAspectRatio="none" style="display:block;width:100%;height:50px;">
+    <path d="M0,25 C480,50 960,0 1440,25 L1440,50 L0,50 Z" fill="#0d1117"/>
+  </svg>
+</div>
+
 <!-- ── Main content ────────────────────────────────────────────────── -->
 <div class="main-content">
 
@@ -924,7 +960,7 @@
 
     <!-- BM25 Column -->
     <div class="results-col" id="col-bm25">
-      <div class="col-header bm25">
+      <div class="col-header bm25 reveal">
         <div class="col-header-left">
           <span class="col-badge">BM25</span>
           <div>
@@ -939,7 +975,7 @@
 
     <!-- FAISS Column -->
     <div class="results-col" id="col-faiss">
-      <div class="col-header faiss">
+      <div class="col-header faiss reveal">
         <div class="col-header-left">
           <span class="col-badge">FAISS</span>
           <div>
@@ -954,7 +990,7 @@
 
     <!-- Hybrid Column -->
     <div class="results-col" id="col-hybrid">
-      <div class="col-header hybrid">
+      <div class="col-header hybrid reveal">
         <div class="col-header-left">
           <span class="col-badge">RRF</span>
           <div>
@@ -1019,7 +1055,7 @@
 
 <!-- ── Upload Modal ────────────────────────────────────────────────── -->
 <div class="modal-overlay" id="upload-modal" onclick="handleOverlayClick(event)">
-  <div class="modal">
+  <div class="modal reveal">
     <div class="modal-header">
       <div class="modal-title">Upload Document</div>
       <button class="modal-close" onclick="closeUploadModal()">&#x2715;</button>
@@ -1193,6 +1229,13 @@
     document.getElementById('results-grid').style.display = 'grid';
     document.getElementById('corpus-panel').style.display = 'block';
 
+    // Reveal column headers
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.col-header.reveal').forEach((el, i) => {
+        setTimeout(() => requestAnimationFrame(() => el.classList.add('visible')), i * 100);
+      });
+    });
+
     ['bm25', 'faiss', 'hybrid'].forEach(type => {
       const body = document.getElementById(type + '-body');
       body.innerHTML = `
@@ -1235,10 +1278,9 @@
       const scoreDisplay = r.score < 0.001
         ? r.score.toExponential(2)
         : r.score.toFixed(4);
-      const delayMs = i * 60;
 
       return `
-        <div class="result-card" style="animation-delay:${delayMs}ms">
+        <div class="result-card reveal" data-delay="${i * 80}">
           <div class="result-card-header">
             <div class="rank-badge ${type}">${r.rank}</div>
             <div class="result-title">${escHtml(r.title)}</div>
@@ -1253,6 +1295,16 @@
         </div>
       `;
     }).join('');
+
+    // Trigger reveal animations with staggered rAF
+    requestAnimationFrame(() => {
+      body.querySelectorAll('.result-card.reveal').forEach((card, i) => {
+        const delay = parseInt(card.dataset.delay, 10) || 0;
+        setTimeout(() => {
+          requestAnimationFrame(() => card.classList.add('visible'));
+        }, delay);
+      });
+    });
   }
 
   /* ── Upload modal ───────────────────────────────────────── */
@@ -1264,7 +1316,13 @@
     document.getElementById('btn-upload-confirm').disabled = true;
     document.getElementById('upload-feedback').className = 'upload-feedback';
     document.getElementById('upload-feedback').textContent = '';
+    const modal = document.querySelector('.modal.reveal');
+    if (modal) modal.classList.remove('visible');
     document.getElementById('upload-modal').classList.add('open');
+    // Trigger reveal on modal content
+    if (modal) {
+      requestAnimationFrame(() => requestAnimationFrame(() => modal.classList.add('visible')));
+    }
   }
 
   function closeUploadModal() {
@@ -1364,7 +1422,31 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
   }
 
+  /* ── Scroll-reveal observer ─────────────────────────────── */
+  const revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+
+  function observeRevealElements() {
+    document.querySelectorAll('.reveal:not(.visible)').forEach(el => {
+      revealObserver.observe(el);
+    });
+  }
+
   /* ── Bootstrap ──────────────────────────────────────────── */
+  // Reveal stat chips on load
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.stat-chip.reveal').forEach((el, i) => {
+      setTimeout(() => requestAnimationFrame(() => el.classList.add('visible')), i * 80);
+    });
+  });
+
+  observeRevealElements();
   checkHealth();
 </script>
 </body>
