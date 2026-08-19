@@ -12,11 +12,11 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:          #242020;
-      --surface:     #1e1b1b;
-      --surface2:    #2a2626;
-      --border:      #383030;
-      --border2:     #524848;
+      --bg:          #141c26;
+      --surface:     #141c26;
+      --surface2:    #1a2335;
+      --border:      #1e3050;
+      --border2:     #2a4070;
       --text:        #f0ece8;
       --text-muted:  #a09890;
       --text-dim:    #7a6e6e;
@@ -25,9 +25,9 @@
       --blue-light:  rgba(29,78,216,0.15);
       --blue-border: rgba(29,78,216,0.40);
 
-      --purple:      #7c3aed;
-      --purple-light: rgba(124,58,237,0.15);
-      --purple-border: rgba(124,58,237,0.40);
+      --purple:      #2563eb;
+      --purple-light: rgba(37,99,235,0.15);
+      --purple-border: rgba(37,99,235,0.40);
 
       --green:       #059669;
       --green-light: rgba(5,150,105,0.15);
@@ -57,10 +57,10 @@
 
     html, body {
       height: 100%;
-      background-color: #242020;
+      background-color: #141c26;
       background-image:
-        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+        linear-gradient(rgba(56,189,248,0.018) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(56,189,248,0.018) 1px, transparent 1px);
       background-size: 30px 30px;
       color: var(--text);
       font-family: var(--font);
@@ -220,8 +220,8 @@
       transition: border-color 0.2s, box-shadow 0.2s;
     }
     .search-input-wrap:focus-within {
-      border-color: var(--purple);
-      box-shadow: 0 0 0 3px rgba(124,58,237,0.15);
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56,189,248,0.15);
     }
 
     .search-icon-el {
@@ -272,12 +272,12 @@
       width: 14px;
       height: 14px;
       border-radius: 50%;
-      background: var(--purple);
+      background: #38bdf8;
       cursor: pointer;
       transition: box-shadow 0.15s;
     }
     .topk-slider::-webkit-slider-thumb:hover {
-      box-shadow: 0 0 0 4px rgba(124,58,237,0.25);
+      box-shadow: 0 0 0 4px rgba(56,189,248,0.25);
     }
 
     .topk-val {
@@ -296,8 +296,8 @@
       font-size: 13px;
       font-weight: 900;
       font-family: var(--font);
-      color: #1a0e08;
-      background: linear-gradient(135deg, #f09060, #fbb485);
+      color: #030f1c;
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
       border: none;
       border-radius: var(--radius-pill);
       padding: 12px 24px;
@@ -305,9 +305,9 @@
       transition: transform 0.2s, box-shadow 0.2s;
       white-space: nowrap;
       flex-shrink: 0;
-      box-shadow: 0 4px 20px rgba(240,144,96,0.35);
+      box-shadow: 0 4px 20px rgba(37,99,235,0.4);
     }
-    .btn-search:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(240,144,96,0.45); }
+    .btn-search:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(56,189,248,0.5); }
     .btn-search:active { transform: scale(0.96) translateY(0); box-shadow: none; }
     .btn-search:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
@@ -408,9 +408,9 @@
     .col-header.bm25 .col-title { color: #60a5fa; }
 
     .col-header.faiss { background: var(--purple-light); border-color: var(--purple-border); }
-    .col-header.faiss::before { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+    .col-header.faiss::before { background: linear-gradient(90deg, #2563eb, #38bdf8); }
     .col-header.faiss .col-badge { background: var(--purple); color: #fff; }
-    .col-header.faiss .col-title { color: #a78bfa; }
+    .col-header.faiss .col-title { color: #38bdf8; }
 
     .col-header.hybrid { background: var(--green-light); border-color: var(--green-border); }
     .col-header.hybrid::before { background: linear-gradient(90deg, #059669, #34d399); }
@@ -446,7 +446,7 @@
     }
 
     .result-card {
-      background: #1e1b1b;
+      background: #141c26;
       border: 1px solid var(--border);
       border-radius: var(--radius-card);
       padding: 14px;
@@ -460,7 +460,7 @@
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 3px;
-      background: linear-gradient(90deg, #7b5ea7, #c85878, #e8836a, #d4a64a, #c8b84a);
+      background: linear-gradient(90deg, #1e3a5f, #2563eb, #38bdf8, #67e8f9, #a5f3fc);
     }
 
     .result-card:hover {
@@ -501,7 +501,7 @@
     }
 
     .rank-badge.bm25   { background: var(--blue-light); color: #60a5fa; border: 1px solid var(--blue-border); }
-    .rank-badge.faiss  { background: var(--purple-light); color: #a78bfa; border: 1px solid var(--purple-border); }
+    .rank-badge.faiss  { background: var(--purple-light); color: #38bdf8; border: 1px solid var(--purple-border); }
     .rank-badge.hybrid { background: var(--green-light); color: #34d399; border: 1px solid var(--green-border); }
 
     .result-title {
@@ -544,7 +544,7 @@
     }
 
     .score-bar-fill.bm25   { background: linear-gradient(90deg, #1d4ed8, #60a5fa); }
-    .score-bar-fill.faiss  { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+    .score-bar-fill.faiss  { background: linear-gradient(90deg, #2563eb, #38bdf8); }
     .score-bar-fill.hybrid { background: linear-gradient(90deg, #059669, #34d399); }
 
     .score-label {
@@ -601,7 +601,7 @@
     /* ── Corpus stats panel ─────────────────── */
     .corpus-panel {
       margin-top: 20px;
-      background: #1e1b1b;
+      background: #141c26;
       border: 1px solid var(--border);
       border-radius: 1.5rem;
       overflow: hidden;
@@ -613,7 +613,7 @@
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 3px;
-      background: linear-gradient(90deg, #7b5ea7, #c85878, #e8836a, #d4a64a, #c8b84a);
+      background: linear-gradient(90deg, #1e3a5f, #2563eb, #38bdf8, #67e8f9, #a5f3fc);
     }
 
     .corpus-toggle {
@@ -684,7 +684,7 @@
     .modal-overlay.open { display: flex; }
 
     .modal {
-      background: #1e1b1b;
+      background: #141c26;
       border: 1px solid var(--border);
       border-radius: 1.5rem;
       padding: 24px;
@@ -700,7 +700,7 @@
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 3px;
-      background: linear-gradient(90deg, #7b5ea7, #c85878, #e8836a, #d4a64a, #c8b84a);
+      background: linear-gradient(90deg, #1e3a5f, #2563eb, #38bdf8, #67e8f9, #a5f3fc);
     }
 
     @keyframes modal-in {
@@ -745,8 +745,8 @@
       transition: border-color 0.2s, background 0.2s;
     }
     .drop-zone:hover, .drop-zone.drag-over {
-      border-color: var(--purple);
-      background: var(--purple-light);
+      border-color: #38bdf8;
+      background: rgba(56,189,248,0.08);
     }
 
     .drop-icon { font-size: 36px; margin-bottom: 8px; }
@@ -809,7 +809,7 @@
       padding: 10px;
       border-radius: var(--radius);
       border: none;
-      background: var(--purple);
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
       color: #fff;
       font-size: 13px;
       font-weight: 600;
@@ -886,11 +886,11 @@
 <!-- ── Rainbow stripe decoration ──────────────────────────────────── -->
 <div style="position:relative;height:110px;overflow:hidden;pointer-events:none;" aria-hidden="true">
   <svg viewBox="0 0 1440 110" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="position:absolute;bottom:0;left:0;width:100%;height:auto;">
-    <path d="M-100,70 C200,10 500,100 800,50 C1100,0 1300,80 1540,40" fill="none" stroke="#7b5ea7" stroke-width="18" stroke-linecap="round" opacity="0.55"/>
-    <path d="M-100,82 C200,22 500,112 800,62 C1100,12 1300,92 1540,52" fill="none" stroke="#c85878" stroke-width="15" stroke-linecap="round" opacity="0.5"/>
-    <path d="M-100,94 C200,34 500,124 800,74 C1100,24 1300,104 1540,64" fill="none" stroke="#e8836a" stroke-width="13" stroke-linecap="round" opacity="0.45"/>
-    <path d="M-100,106 C200,46 500,136 800,86 C1100,36 1300,116 1540,76" fill="none" stroke="#d4a64a" stroke-width="11" stroke-linecap="round" opacity="0.4"/>
-    <path d="M-100,118 C200,58 500,148 800,98 C1100,48 1300,128 1540,88" fill="none" stroke="#c8b84a" stroke-width="9" stroke-linecap="round" opacity="0.35"/>
+    <path d="M-100,70 C200,10 500,100 800,50 C1100,0 1300,80 1540,40" fill="none" stroke="#1e3a5f" stroke-width="18" stroke-linecap="round" opacity="0.6"/>
+    <path d="M-100,82 C200,22 500,112 800,62 C1100,12 1300,92 1540,52" fill="none" stroke="#2563eb" stroke-width="15" stroke-linecap="round" opacity="0.55"/>
+    <path d="M-100,94 C200,34 500,124 800,74 C1100,24 1300,104 1540,64" fill="none" stroke="#38bdf8" stroke-width="13" stroke-linecap="round" opacity="0.5"/>
+    <path d="M-100,106 C200,46 500,136 800,86 C1100,36 1300,116 1540,76" fill="none" stroke="#67e8f9" stroke-width="11" stroke-linecap="round" opacity="0.45"/>
+    <path d="M-100,118 C200,58 500,148 800,98 C1100,48 1300,128 1540,88" fill="none" stroke="#a5f3fc" stroke-width="9" stroke-linecap="round" opacity="0.4"/>
   </svg>
 </div>
 
@@ -958,7 +958,7 @@
 
 <!-- ── Hero ───────────────────────────────────────────────────────── -->
 <div style="max-width:1200px;margin:0 auto;padding:40px 24px 16px;">
-  <div style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#f09060;margin-bottom:10px;">Hybrid Retrieval Engine</div>
+  <div style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#38bdf8;margin-bottom:10px;">Hybrid Retrieval Engine</div>
   <h1 style="font-size:clamp(2rem,4vw,3rem);font-weight:900;color:#f0ece8;line-height:1.15;letter-spacing:-0.03em;margin-bottom:12px;">BM25 + FAISS retrieval.<br>Reranked, cached, streamed.</h1>
   <p style="font-size:15px;color:#a09890;max-width:540px;font-weight:500;">Production RAG with Reciprocal Rank Fusion reranking and a semantic cache at 0.96 cosine threshold that eliminates redundant LLM calls.</p>
 </div>
@@ -999,7 +999,7 @@
 <!-- ── Wave divider ────────────────────────────────────────────────── -->
 <div style="line-height:0; background:var(--bg);">
   <svg viewBox="0 0 1440 50" preserveAspectRatio="none" style="display:block;width:100%;height:50px;">
-    <path d="M0,25 C480,50 960,0 1440,25 L1440,50 L0,50 Z" fill="#242020"/>
+    <path d="M0,25 C480,50 960,0 1440,25 L1440,50 L0,50 Z" fill="#141c26"/>
   </svg>
 </div>
 
