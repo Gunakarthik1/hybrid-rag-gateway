@@ -3,594 +3,569 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Hybrid RAG Gateway</title>
+  <title>HybridRAG</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg:          #141c26;
-      --surface:     #141c26;
-      --surface2:    #1a2335;
-      --border:      #1e3050;
-      --border2:     #2a4070;
-      --text:        #f0ece8;
-      --text-muted:  #a09890;
-      --text-dim:    #7a6e6e;
-
-      --blue:        #1d4ed8;
-      --blue-light:  rgba(29,78,216,0.15);
-      --blue-border: rgba(29,78,216,0.40);
-
-      --purple:      #2563eb;
-      --purple-light: rgba(37,99,235,0.15);
-      --purple-border: rgba(37,99,235,0.40);
-
-      --green:       #059669;
-      --green-light: rgba(5,150,105,0.15);
-      --green-border: rgba(5,150,105,0.40);
-
-      --amber:       #d97706;
-      --amber-light: rgba(217,119,6,0.15);
-      --amber-border: rgba(217,119,6,0.40);
-
-      --red:         #dc2626;
-      --red-light:   rgba(220,38,38,0.12);
-
-      --radius-sm:   6px;
-      --radius:      8px;
-      --radius-lg:   1.25rem;
-      --radius-xl:   1.5rem;
-      --radius-card: 1.25rem;
-      --radius-pill: 50rem;
-
-      --font-mono:   'JetBrains Mono', 'Fira Code', monospace;
-      --font:        'Nunito', system-ui, sans-serif;
+      --bg: #141c26;
+      --card: #1a2436;
+      --border: rgba(37,99,235,0.2);
+      --accent: #2563eb;
+      --accent-end: #38bdf8;
+      --ink: #e8f4ff;
+      --muted: #6899c8;
     }
 
-    html {
-      scroll-behavior: smooth;
-    }
+    html { scroll-behavior: smooth; }
 
-    html, body {
-      height: 100%;
-      background-color: #141c26;
+    body {
+      background: var(--bg);
       background-image:
-        linear-gradient(rgba(56,189,248,0.018) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(56,189,248,0.018) 1px, transparent 1px);
+        linear-gradient(rgba(37,99,235,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(37,99,235,0.02) 1px, transparent 1px);
       background-size: 30px 30px;
-      color: var(--text);
-      font-family: var(--font);
-      font-size: 14px;
-      line-height: 1.6;
+      font-family: 'Nunito', sans-serif;
+      color: var(--ink);
+      min-height: 100vh;
       -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
     }
 
-    /* ── Scrollbars ─────────────────────────── */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--border2); }
+    ::-webkit-scrollbar-thumb { background: rgba(37,99,235,0.3); border-radius: 3px; }
 
-    /* ── Layout ─────────────────────────────── */
-    .app { display: flex; flex-direction: column; min-height: 100vh; }
-
-    /* ── Header ─────────────────────────────── */
-    .header {
+    /* ── Top Strip ───────────────────────────── */
+    .top-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      height: 48px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(20,28,38,0.95);
+      backdrop-filter: blur(12px);
       position: sticky;
       top: 0;
       z-index: 100;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
     }
 
-    .header-icon {
-      width: 32px;
-      height: 32px;
-      background: linear-gradient(135deg, var(--blue) 0%, var(--purple) 100%);
-      border-radius: var(--radius);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-    }
-
-    .header-title {
-      font-size: 16px;
-      font-weight: 700;
+    .wordmark {
+      font: 800 18px 'Nunito';
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
       letter-spacing: -0.02em;
-      color: var(--text);
+      text-decoration: none;
     }
 
-    .header-subtitle {
-      font-size: 11px;
-      color: var(--text-muted);
-      font-family: var(--font-mono);
-    }
-
-    .header-divider {
-      flex: 1;
-    }
-
-    .status-pill {
-      display: inline-flex;
+    .strip-center {
+      display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--text-muted);
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 4px 10px;
+      font: 600 11px 'Nunito';
+      color: var(--muted);
+      letter-spacing: 0.04em;
+    }
+
+    .strip-sep {
+      color: rgba(104,153,200,0.3);
+      margin: 0 2px;
+    }
+
+    .strip-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .stat-pill {
+      padding: 4px 12px;
+      border-radius: 100px;
+      background: rgba(37,99,235,0.08);
+      border: 1px solid rgba(37,99,235,0.18);
+      font: 600 11px 'Nunito';
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    .stat-pill .pill-val {
+      color: var(--ink);
+      font-weight: 800;
     }
 
     .status-dot {
       width: 6px;
       height: 6px;
       border-radius: 50%;
-      background: var(--border2);
+      background: rgba(104,153,200,0.4);
+      flex-shrink: 0;
       transition: background 0.3s;
     }
-    .status-dot.online  { background: var(--green); box-shadow: 0 0 6px rgba(5,150,105,0.5); }
-    .status-dot.offline { background: var(--red); }
-    .status-dot.checking { background: var(--amber); animation: pulse-amber 1.2s infinite; }
+    .status-dot.online  { background: #4ade80; box-shadow: 0 0 6px rgba(74,222,128,0.5); }
+    .status-dot.offline { background: #f87171; }
+    .status-dot.checking { background: #facc15; animation: pulse-dot 1.2s infinite; }
 
-    @keyframes pulse-amber {
+    @keyframes pulse-dot {
       0%,100% { opacity: 1; }
-      50% { opacity: 0.4; }
+      50% { opacity: 0.35; }
     }
 
-    .btn-upload-header {
-      display: inline-flex;
+    /* ── Search Hero ─────────────────────────── */
+    .search-hero {
+      max-width: 720px;
+      margin: 72px auto 0;
+      padding: 0 24px;
+      display: flex;
+      flex-direction: column;
       align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      font-weight: 500;
-      font-family: var(--font);
-      color: var(--text);
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 6px 12px;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
     }
-    .btn-upload-header:hover { border-color: var(--border2); background: var(--border); }
 
-    /* ── Status bar ─────────────────────────── */
-    .status-bar {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 8px 24px;
+    .hero-eyebrow {
+      font: 700 11px 'Nunito';
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .search-bar {
+      width: 100%;
       display: flex;
       align-items: center;
-      gap: 20px;
-      font-size: 12px;
-      color: var(--text-muted);
-      flex-wrap: wrap;
-    }
-
-    .stat-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .stat-chip-label { color: var(--text-dim); }
-
-    .stat-chip-value {
-      font-weight: 600;
-      font-family: var(--font-mono);
-      color: var(--text);
-    }
-
-    /* ── Search section ─────────────────────── */
-    .search-section {
-      padding: 24px 24px 20px;
-      background: var(--bg);
-      border-bottom: 1px solid var(--border);
-    }
-
-    .search-row {
-      display: flex;
-      align-items: center;
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: 100px;
+      padding: 6px 6px 6px 22px;
       gap: 10px;
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-
-    .search-input-wrap {
-      flex: 1;
-      position: relative;
-      display: flex;
-      align-items: center;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-pill);
       transition: border-color 0.2s, box-shadow 0.2s;
     }
-    .search-input-wrap:focus-within {
-      border-color: #38bdf8;
-      box-shadow: 0 0 0 3px rgba(56,189,248,0.15);
+
+    .search-bar:focus-within {
+      border-color: rgba(37,99,235,0.5);
+      box-shadow: 0 0 0 4px rgba(37,99,235,0.1), 0 8px 32px rgba(37,99,235,0.15);
     }
 
-    .search-icon-el {
-      position: absolute;
-      left: 14px;
-      color: var(--text-muted);
-      pointer-events: none;
+    .search-icon {
+      color: var(--muted);
+      flex-shrink: 0;
       line-height: 0;
     }
 
     #query-input {
       flex: 1;
-      background: transparent;
+      background: none;
       border: none;
       outline: none;
-      font-family: var(--font);
-      font-size: 15px;
-      color: var(--text);
-      padding: 14px 14px 14px 42px;
-      width: 100%;
+      font: 600 16px 'Nunito';
+      color: var(--ink);
+      padding: 10px 0;
     }
-    #query-input::placeholder { color: var(--text-dim); }
+
+    #query-input::placeholder { color: rgba(104,153,200,0.45); }
+
+    .search-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
 
     .topk-wrap {
       display: flex;
       align-items: center;
       gap: 6px;
-      flex-shrink: 0;
+      padding-right: 4px;
     }
 
     .topk-wrap label {
-      font-size: 11px;
-      color: var(--text-muted);
+      font: 600 11px 'Nunito';
+      color: var(--muted);
       white-space: nowrap;
     }
 
     .topk-slider {
       -webkit-appearance: none;
       appearance: none;
-      width: 100px;
-      height: 4px;
-      background: var(--border);
+      width: 72px;
+      height: 3px;
+      background: rgba(37,99,235,0.2);
       border-radius: 2px;
       outline: none;
     }
+
     .topk-slider::-webkit-slider-thumb {
       -webkit-appearance: none;
-      width: 14px;
-      height: 14px;
+      width: 13px;
+      height: 13px;
       border-radius: 50%;
       background: #38bdf8;
       cursor: pointer;
       transition: box-shadow 0.15s;
     }
+
     .topk-slider::-webkit-slider-thumb:hover {
-      box-shadow: 0 0 0 4px rgba(56,189,248,0.25);
+      box-shadow: 0 0 0 4px rgba(56,189,248,0.2);
     }
 
     .topk-val {
-      font-family: var(--font-mono);
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
+      font: 800 12px 'Nunito';
+      color: var(--ink);
       min-width: 14px;
       text-align: center;
     }
 
-    .btn-search {
-      display: inline-flex;
+    .search-btn {
+      padding: 11px 26px;
+      border-radius: 100px;
+      border: none;
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      color: #020d1f;
+      font: 800 13px 'Nunito';
+      cursor: pointer;
+      white-space: nowrap;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.15s;
+      box-shadow: 0 4px 16px rgba(37,99,235,0.35);
+      display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 13px;
-      font-weight: 900;
-      font-family: var(--font);
-      color: #030f1c;
-      background: linear-gradient(135deg, #2563eb, #38bdf8);
-      border: none;
-      border-radius: var(--radius-pill);
-      padding: 12px 24px;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      white-space: nowrap;
-      flex-shrink: 0;
-      box-shadow: 0 4px 20px rgba(37,99,235,0.4);
     }
-    .btn-search:hover { transform: translateY(-3px); box-shadow: 0 10px 32px rgba(56,189,248,0.5); }
-    .btn-search:active { transform: scale(0.96) translateY(0); box-shadow: none; }
-    .btn-search:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
 
-    /* ── Cache hit banner ───────────────────── */
-    .cache-hit-banner {
-      display: none;
-      align-items: center;
+    .search-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(56,189,248,0.45); }
+    .search-btn:active { transform: scale(0.97); box-shadow: none; }
+    .search-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    .search-tagline {
+      margin-top: 14px;
+      font: 600 12px 'Nunito';
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .search-tagline .tag-sep { color: rgba(104,153,200,0.35); margin: 0 7px; }
+
+    /* ── Example chips ───────────────────────── */
+    .example-chips {
+      display: flex;
+      flex-wrap: wrap;
       gap: 8px;
-      padding: 10px 24px;
-      background: var(--amber-light);
-      border-bottom: 1px solid var(--amber-border);
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--amber);
-      letter-spacing: 0.02em;
+      justify-content: center;
+      margin-top: 20px;
     }
-    .cache-hit-banner.visible { display: flex; }
 
-    .cache-hit-badge {
-      background: var(--amber);
-      color: #fff;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      padding: 2px 7px;
-      border-radius: 20px;
+    .example-chip {
+      padding: 6px 14px;
+      border-radius: 100px;
+      background: rgba(37,99,235,0.06);
+      border: 1px solid rgba(37,99,235,0.15);
+      color: var(--muted);
+      font: 600 11px 'Nunito';
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+
+    .example-chip:hover {
+      background: rgba(37,99,235,0.14);
+      border-color: rgba(37,99,235,0.35);
+      color: var(--ink);
+    }
+
+    /* ── Results Area ────────────────────────── */
+    .results-area {
+      max-width: 720px;
+      margin: 52px auto 0;
+      padding: 0 24px 80px;
+    }
+
+    .results-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      color: var(--muted);
+      font: 700 10px 'Nunito';
+      letter-spacing: 0.14em;
       text-transform: uppercase;
     }
 
-    /* ── Main content ───────────────────────── */
-    .main-content {
+    .results-divider::after {
+      content: '';
       flex: 1;
-      padding: 20px 24px 40px;
-      max-width: 1400px;
-      width: 100%;
-      margin: 0 auto;
+      height: 1px;
+      background: var(--border);
     }
 
-    /* ── Results columns ────────────────────── */
-    .results-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 16px;
-      animation: slide-in 0.35s ease both;
+    /* ── AI Answer Card ──────────────────────── */
+    .answer-card {
+      background: var(--card);
+      border: 1px solid rgba(37,99,235,0.25);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+      animation: fade-up 0.4s cubic-bezier(0.16,1,0.3,1) both;
     }
 
-    @keyframes slide-in {
-      from { opacity: 0; transform: translateY(16px); }
+    @keyframes fade-up {
+      from { opacity: 0; transform: translateY(14px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    .results-col {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .col-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 14px;
-      border-radius: 1.5rem 1.5rem 0 0;
-      border: 1px solid var(--border);
-      border-bottom: none;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .col-header::before {
+    .answer-card::before {
       content: '';
       position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 3px;
-      border-radius: 1.5rem 1.5rem 0 0;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #2563eb, #38bdf8);
     }
 
-    .col-header-left {
+    .answer-header {
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      margin-bottom: 14px;
     }
 
-    .col-badge {
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 0.06em;
+    .answer-label {
+      font: 800 11px 'Nunito';
+      letter-spacing: 0.1em;
       text-transform: uppercase;
-      padding: 3px 8px;
-      border-radius: 20px;
+      color: #38bdf8;
     }
 
-    .col-header.bm25 { background: var(--blue-light); border-color: var(--blue-border); }
-    .col-header.bm25::before { background: linear-gradient(90deg, #1d4ed8, #60a5fa); }
-    .col-header.bm25 .col-badge { background: var(--blue); color: #fff; }
-    .col-header.bm25 .col-title { color: #60a5fa; }
-
-    .col-header.faiss { background: var(--purple-light); border-color: var(--purple-border); }
-    .col-header.faiss::before { background: linear-gradient(90deg, #2563eb, #38bdf8); }
-    .col-header.faiss .col-badge { background: var(--purple); color: #fff; }
-    .col-header.faiss .col-title { color: #38bdf8; }
-
-    .col-header.hybrid { background: var(--green-light); border-color: var(--green-border); }
-    .col-header.hybrid::before { background: linear-gradient(90deg, #059669, #34d399); }
-    .col-header.hybrid .col-badge { background: var(--green); color: #fff; }
-    .col-header.hybrid .col-title { color: #34d399; }
-
-    .col-title {
-      font-size: 13px;
-      font-weight: 700;
-    }
-
-    .col-desc {
-      font-size: 10px;
-      color: var(--text-muted);
-    }
-
-    .time-badge {
-      font-size: 10px;
-      font-family: var(--font-mono);
-      font-weight: 600;
-      color: var(--text-muted);
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 2px 7px;
-    }
-
-    /* ── Result cards ───────────────────────── */
-    .results-list {
+    .answer-meta {
       display: flex;
-      flex-direction: column;
-      gap: 8px;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 14px;
     }
 
-    .result-card {
-      background: #141c26;
+    .source-chip {
+      padding: 3px 10px;
+      border-radius: 6px;
+      font: 700 10px 'Nunito';
+      border: 1px solid;
+      letter-spacing: 0.04em;
+    }
+
+    .chip-bm25   { background: rgba(37,99,235,0.1);  border-color: rgba(37,99,235,0.3);  color: #60a5fa; }
+    .chip-faiss  { background: rgba(56,189,248,0.1); border-color: rgba(56,189,248,0.3); color: #38bdf8; }
+    .chip-cache-hit  { background: rgba(22,163,74,0.1);  border-color: rgba(22,163,74,0.3);  color: #4ade80; }
+    .chip-cache-miss { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.25); color: #f87171; }
+
+    .latency-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      font: 600 11px 'Nunito';
+      color: var(--muted);
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .latency-row strong { color: var(--ink); font-weight: 800; }
+
+    .answer-text {
+      font: 400 15px/1.75 'Nunito';
+      color: var(--ink);
+    }
+
+    /* ── Chunk Grid ──────────────────────────── */
+    .chunks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+
+    .chunk-card {
+      background: var(--card);
       border: 1px solid var(--border);
-      border-radius: var(--radius-card);
+      border-radius: 12px;
       padding: 14px;
       position: relative;
       overflow: hidden;
       transition: border-color 0.15s, transform 0.2s, box-shadow 0.2s;
+      animation: fade-up 0.4s cubic-bezier(0.16,1,0.3,1) both;
     }
 
-    .result-card::before {
+    .chunk-card:hover {
+      border-color: rgba(37,99,235,0.4);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+
+    .chunk-card::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #1e3a5f, #2563eb, #38bdf8, #67e8f9, #a5f3fc);
+      height: 2px;
+      background: linear-gradient(90deg, #2563eb, #38bdf8);
     }
 
-    .result-card:hover {
-      border-color: var(--border2);
-      transform: translateY(-3px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
+    .chunk-rank {
+      font: 800 10px 'Nunito';
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
     }
 
-    /* ── Reveal animations ──────────────────── */
-    .reveal {
-      opacity: 0;
-      transform: translateY(28px);
-      transition: opacity 0.65s cubic-bezier(0.16,1,0.3,1), transform 0.65s cubic-bezier(0.16,1,0.3,1);
-    }
-    .reveal.visible {
-      opacity: 1;
-      transform: translateY(0);
+    .chunk-score {
+      font: 800 21px 'Nunito';
+      color: var(--ink);
+      line-height: 1;
     }
 
-    .result-card-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-
-    .rank-badge {
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      font-weight: 700;
-      flex-shrink: 0;
-      font-family: var(--font-mono);
-    }
-
-    .rank-badge.bm25   { background: var(--blue-light); color: #60a5fa; border: 1px solid var(--blue-border); }
-    .rank-badge.faiss  { background: var(--purple-light); color: #38bdf8; border: 1px solid var(--purple-border); }
-    .rank-badge.hybrid { background: var(--green-light); color: #34d399; border: 1px solid var(--green-border); }
-
-    .result-title {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
-      line-height: 1.4;
-      flex: 1;
-    }
-
-    .result-excerpt {
-      font-size: 12px;
-      color: var(--text-muted);
-      line-height: 1.6;
-      display: -webkit-box;
-      -webkit-line-clamp: 3;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
+    .chunk-score-label {
+      font: 600 9px 'Nunito';
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
       margin-bottom: 10px;
     }
 
-    .score-bar-wrap {
-      display: flex;
-      align-items: center;
-      gap: 8px;
+    .chunk-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 10px 0;
     }
 
-    .score-bar-track {
-      flex: 1;
-      height: 3px;
-      background: var(--surface2);
-      border-radius: 2px;
+    .chunk-text {
+      font: 400 11px/1.55 'Nunito';
+      color: rgba(232,244,255,0.55);
+      display: -webkit-box;
+      -webkit-line-clamp: 4;
+      -webkit-box-orient: vertical;
       overflow: hidden;
     }
 
-    .score-bar-fill {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 0.6s ease;
+    /* ── Knowledge Base Section ──────────────── */
+    .kb-section {
+      margin-top: 8px;
     }
 
-    .score-bar-fill.bm25   { background: linear-gradient(90deg, #1d4ed8, #60a5fa); }
-    .score-bar-fill.faiss  { background: linear-gradient(90deg, #2563eb, #38bdf8); }
-    .score-bar-fill.hybrid { background: linear-gradient(90deg, #059669, #34d399); }
-
-    .score-label {
-      font-size: 10px;
-      font-family: var(--font-mono);
-      font-weight: 600;
-      color: var(--text-muted);
-      min-width: 44px;
-      text-align: right;
-    }
-
-    /* ── Empty / placeholder ────────────────── */
-    .empty-col {
-      border: 1px solid var(--border);
-      border-top: none;
-      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-      padding: 40px 14px;
+    .kb-header {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      gap: 8px;
-      color: var(--text-dim);
-      font-size: 12px;
-      text-align: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
     }
 
-    .empty-icon { font-size: 28px; opacity: 0.4; }
+    .add-doc-btn {
+      padding: 8px 18px;
+      border-radius: 10px;
+      border: 1.5px solid rgba(37,99,235,0.35);
+      background: transparent;
+      color: var(--ink);
+      font: 700 12px 'Nunito';
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
 
-    /* ── Loading skeleton ───────────────────── */
-    .skeleton {
-      border: 1px solid var(--border);
-      border-top: none;
-      border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-      padding: 12px;
+    .add-doc-btn:hover {
+      background: rgba(37,99,235,0.1);
+      border-color: rgba(37,99,235,0.55);
+    }
+
+    .doc-list {
       display: flex;
       flex-direction: column;
       gap: 8px;
     }
 
-    .skel-card {
-      height: 100px;
-      background: var(--surface2);
-      border-radius: var(--radius);
-      animation: shimmer 1.4s infinite linear;
-      background: linear-gradient(90deg, var(--surface2) 25%, var(--border) 50%, var(--surface2) 75%);
+    .doc-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 13px 16px;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      transition: border-color 0.15s;
+    }
+
+    .doc-item:hover { border-color: rgba(37,99,235,0.35); }
+
+    .doc-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(37,99,235,0.12);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .doc-name {
+      font: 700 13px 'Nunito';
+      color: var(--ink);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .doc-meta {
+      font: 600 11px 'Nunito';
+      color: var(--muted);
+      white-space: nowrap;
+    }
+
+    .doc-delete {
+      background: none;
+      border: none;
+      color: rgba(248,113,113,0.4);
+      cursor: pointer;
+      font-size: 15px;
+      padding: 4px 8px;
+      transition: color 0.15s;
+      line-height: 1;
+    }
+
+    .doc-delete:hover { color: #f87171; }
+
+    .kb-empty {
+      text-align: center;
+      padding: 32px 16px;
+      color: var(--muted);
+      font: 600 13px 'Nunito';
+      border: 1px dashed rgba(37,99,235,0.15);
+      border-radius: 12px;
+    }
+
+    /* ── Skeleton loading ────────────────────── */
+    .skeleton-answer {
+      background: var(--card);
+      border: 1px solid rgba(37,99,235,0.15);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .skel {
+      border-radius: 6px;
+      background: linear-gradient(90deg, rgba(37,99,235,0.08) 25%, rgba(37,99,235,0.14) 50%, rgba(37,99,235,0.08) 75%);
       background-size: 200% 100%;
+      animation: shimmer 1.5s infinite linear;
     }
 
     @keyframes shimmer {
@@ -598,109 +573,47 @@
       to   { background-position: -200% 0; }
     }
 
-    /* ── Corpus stats panel ─────────────────── */
-    .corpus-panel {
-      margin-top: 20px;
-      background: #141c26;
+    .skeleton-chunks {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+      gap: 10px;
+      margin-bottom: 40px;
+    }
+
+    .skel-chunk {
+      background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 1.5rem;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .corpus-panel::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #1e3a5f, #2563eb, #38bdf8, #67e8f9, #a5f3fc);
-    }
-
-    .corpus-toggle {
-      width: 100%;
-      background: none;
-      border: none;
-      padding: 12px 16px;
+      border-radius: 12px;
+      padding: 14px;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      color: var(--text-muted);
-      font-size: 12px;
-      font-weight: 600;
-      font-family: var(--font);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      transition: background 0.15s;
-    }
-    .corpus-toggle:hover { background: var(--surface2); }
-
-    .corpus-toggle-icon {
-      transition: transform 0.2s;
-    }
-    .corpus-toggle-icon.open { transform: rotate(180deg); }
-
-    .corpus-body {
-      display: none;
-      padding: 16px;
-      border-top: 1px solid var(--border);
-      gap: 20px;
-    }
-    .corpus-body.open {
-      display: flex;
-      flex-wrap: wrap;
+      flex-direction: column;
+      gap: 8px;
     }
 
-    .corpus-stat {
-      flex: 1;
-      min-width: 120px;
-    }
-
-    .corpus-stat-value {
-      font-size: 28px;
-      font-weight: 700;
-      font-family: var(--font-mono);
-      color: var(--text);
-      line-height: 1;
-    }
-
-    .corpus-stat-label {
-      font-size: 11px;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* ── Upload Modal ───────────────────────── */
+    /* ── Upload Modal ────────────────────────── */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.7);
+      background: rgba(0,0,0,0.72);
       backdrop-filter: blur(4px);
-      z-index: 1000;
+      z-index: 200;
       display: none;
       align-items: center;
       justify-content: center;
     }
+
     .modal-overlay.open { display: flex; }
 
     .modal {
-      background: #141c26;
-      border: 1px solid var(--border);
-      border-radius: 1.5rem;
-      padding: 24px;
-      width: 460px;
-      max-width: calc(100vw - 32px);
-      animation: modal-in 0.2s ease;
+      background: #1a2436;
+      border: 1px solid rgba(37,99,235,0.25);
+      border-radius: 20px;
+      padding: 32px;
+      width: 520px;
+      max-width: 90vw;
       position: relative;
       overflow: hidden;
-    }
-
-    .modal::before {
-      content: '';
-      position: absolute;
-      top: 0; left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, #1e3a5f, #2563eb, #38bdf8, #67e8f9, #a5f3fc);
+      animation: modal-in 0.2s ease;
     }
 
     @keyframes modal-in {
@@ -708,59 +621,68 @@
       to   { opacity: 1; transform: scale(1) translateY(0); }
     }
 
+    .modal::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, #2563eb, #38bdf8);
+    }
+
     .modal-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
     }
 
-    .modal-title {
-      font-size: 16px;
-      font-weight: 700;
+    .modal h3 {
+      font: 800 18px 'Nunito';
+      color: var(--ink);
     }
 
     .modal-close {
       width: 28px;
       height: 28px;
-      border-radius: var(--radius-sm);
-      border: 1px solid var(--border);
+      border-radius: 8px;
+      border: 1px solid rgba(37,99,235,0.2);
       background: none;
-      color: var(--text-muted);
-      font-size: 16px;
+      color: var(--muted);
+      font-size: 15px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: background 0.15s;
     }
-    .modal-close:hover { background: var(--surface2); }
+
+    .modal-close:hover { background: rgba(37,99,235,0.1); }
 
     .drop-zone {
-      border: 2px dashed var(--border);
-      border-radius: var(--radius-lg);
+      border: 2px dashed rgba(37,99,235,0.25);
+      border-radius: 14px;
       padding: 32px 20px;
       text-align: center;
       cursor: pointer;
       transition: border-color 0.2s, background 0.2s;
     }
+
     .drop-zone:hover, .drop-zone.drag-over {
       border-color: #38bdf8;
-      background: rgba(56,189,248,0.08);
+      background: rgba(56,189,248,0.05);
     }
 
-    .drop-icon { font-size: 36px; margin-bottom: 8px; }
+    .drop-icon { font-size: 32px; margin-bottom: 10px; }
 
     .drop-label {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text);
+      font: 700 14px 'Nunito';
+      color: var(--ink);
       margin-bottom: 4px;
     }
 
     .drop-sub {
-      font-size: 12px;
-      color: var(--text-muted);
+      font: 600 12px 'Nunito';
+      color: var(--muted);
     }
 
     .file-name-display {
@@ -768,13 +690,14 @@
       align-items: center;
       gap: 8px;
       padding: 10px 14px;
-      background: var(--green-light);
-      border: 1px solid var(--green-border);
-      border-radius: var(--radius);
+      background: rgba(22,163,74,0.08);
+      border: 1px solid rgba(22,163,74,0.3);
+      border-radius: 10px;
       margin-top: 12px;
-      font-size: 12px;
-      color: var(--text);
+      font: 600 12px 'Nunito';
+      color: var(--ink);
     }
+
     .file-name-display.visible { display: flex; }
 
     .file-name-text {
@@ -784,331 +707,227 @@
       white-space: nowrap;
     }
 
-    .modal-footer {
-      display: flex;
-      gap: 8px;
-      margin-top: 20px;
-    }
-
-    .btn-cancel {
-      flex: 1;
-      padding: 10px;
-      border-radius: var(--radius);
-      border: 1px solid var(--border);
-      background: none;
-      color: var(--text-muted);
-      font-size: 13px;
-      font-family: var(--font);
-      cursor: pointer;
-      transition: background 0.15s;
-    }
-    .btn-cancel:hover { background: var(--surface2); }
-
-    .btn-upload-confirm {
-      flex: 2;
-      padding: 10px;
-      border-radius: var(--radius);
-      border: none;
-      background: linear-gradient(135deg, #2563eb, #38bdf8);
-      color: #fff;
-      font-size: 13px;
-      font-weight: 600;
-      font-family: var(--font);
-      cursor: pointer;
-      transition: opacity 0.15s;
-    }
-    .btn-upload-confirm:hover { opacity: 0.88; }
-    .btn-upload-confirm:disabled { opacity: 0.4; cursor: not-allowed; }
-
     .upload-feedback {
       display: none;
       padding: 10px 14px;
-      border-radius: var(--radius);
-      font-size: 12px;
-      font-weight: 500;
+      border-radius: 10px;
+      font: 600 12px 'Nunito';
       margin-top: 12px;
     }
+
     .upload-feedback.success {
       display: block;
-      background: var(--green-light);
-      border: 1px solid var(--green-border);
-      color: #34d399;
+      background: rgba(22,163,74,0.08);
+      border: 1px solid rgba(22,163,74,0.3);
+      color: #4ade80;
     }
+
     .upload-feedback.error {
       display: block;
-      background: var(--red-light);
-      border: 1px solid rgba(220,38,38,0.35);
+      background: rgba(239,68,68,0.08);
+      border: 1px solid rgba(239,68,68,0.3);
       color: #f87171;
     }
 
-    /* ── Toast ──────────────────────────────── */
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      justify-content: flex-end;
+    }
+
+    .btn-cancel {
+      padding: 10px 20px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--muted);
+      font: 700 13px 'Nunito';
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .btn-cancel:hover { background: rgba(37,99,235,0.07); }
+
+    .btn-add {
+      padding: 10px 24px;
+      border-radius: 10px;
+      border: none;
+      background: linear-gradient(135deg, #2563eb, #38bdf8);
+      color: #020d1f;
+      font: 800 13px 'Nunito';
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+
+    .btn-add:hover { opacity: 0.88; }
+    .btn-add:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* ── Toast ───────────────────────────────── */
     #toast {
       position: fixed;
       bottom: 24px;
       left: 50%;
       transform: translateX(-50%) translateY(12px);
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text);
-      font-size: 12px;
-      font-weight: 500;
-      padding: 10px 16px;
-      border-radius: var(--radius-lg);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+      background: #1a2436;
+      border: 1px solid rgba(37,99,235,0.25);
+      color: var(--ink);
+      font: 600 12px 'Nunito';
+      padding: 10px 18px;
+      border-radius: 100px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
       display: none;
       z-index: 2000;
       white-space: nowrap;
     }
+
     #toast.show {
       display: block;
       animation: toast-in 0.2s ease forwards;
     }
+
     @keyframes toast-in {
       from { opacity: 0; transform: translateX(-50%) translateY(12px); }
       to   { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
 
-    /* ── Responsive ─────────────────────────── */
-    @media (max-width: 900px) {
-      .results-grid { grid-template-columns: 1fr; }
-    }
-    @media (max-width: 600px) {
-      .header { padding: 0 16px; }
-      .search-section { padding: 16px; }
-      .main-content { padding: 16px 16px 32px; }
-      .status-bar { padding: 8px 16px; }
-      .topk-slider { width: 70px; }
+    /* ── Responsive ──────────────────────────── */
+    @media (max-width: 640px) {
+      .top-strip { padding: 0 16px; }
+      .strip-center { display: none; }
+      .stat-pill .pill-label { display: none; }
+      .search-hero { margin-top: 40px; padding: 0 16px; }
+      .results-area { padding: 0 16px 60px; }
+      .topk-wrap { display: none; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── Rainbow stripe decoration ──────────────────────────────────── -->
-<div style="position:relative;height:110px;overflow:hidden;pointer-events:none;" aria-hidden="true">
-  <svg viewBox="0 0 1440 110" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="position:absolute;bottom:0;left:0;width:100%;height:auto;">
-    <path d="M-100,70 C200,10 500,100 800,50 C1100,0 1300,80 1540,40" fill="none" stroke="#1e3a5f" stroke-width="18" stroke-linecap="round" opacity="0.6"/>
-    <path d="M-100,82 C200,22 500,112 800,62 C1100,12 1300,92 1540,52" fill="none" stroke="#2563eb" stroke-width="15" stroke-linecap="round" opacity="0.55"/>
-    <path d="M-100,94 C200,34 500,124 800,74 C1100,24 1300,104 1540,64" fill="none" stroke="#38bdf8" stroke-width="13" stroke-linecap="round" opacity="0.5"/>
-    <path d="M-100,106 C200,46 500,136 800,86 C1100,36 1300,116 1540,76" fill="none" stroke="#67e8f9" stroke-width="11" stroke-linecap="round" opacity="0.45"/>
-    <path d="M-100,118 C200,58 500,148 800,98 C1100,48 1300,128 1540,88" fill="none" stroke="#a5f3fc" stroke-width="9" stroke-linecap="round" opacity="0.4"/>
-  </svg>
-</div>
+<!-- ── Top Strip ──────────────────────────────────────────────────── -->
+<header class="top-strip">
+  <span class="wordmark">HybridRAG</span>
 
-<!-- ── Header ──────────────────────────────────────────────────────── -->
-<header class="header">
-  <div class="header-icon">
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="12" cy="12" r="3"/>
-      <circle cx="4"  cy="6"  r="2"/>
-      <circle cx="20" cy="6"  r="2"/>
-      <circle cx="4"  cy="18" r="2"/>
-      <circle cx="20" cy="18" r="2"/>
-      <line x1="6"  y1="7"  x2="10" y2="11"/>
-      <line x1="18" y1="7"  x2="14" y2="11"/>
-      <line x1="6"  y1="17" x2="10" y2="13"/>
-      <line x1="18" y1="17" x2="14" y2="13"/>
-    </svg>
+  <div class="strip-center">
+    <span>BM25</span>
+    <span class="strip-sep">+</span>
+    <span>FAISS</span>
+    <span class="strip-sep">·</span>
+    <span>Reciprocal Rank Fusion</span>
+    <span class="strip-sep">·</span>
+    <span>Semantic Cache</span>
   </div>
-  <div>
-    <div class="header-title">Hybrid RAG Gateway</div>
-    <div class="header-subtitle">BM25 · TF-IDF FAISS · RRF Fusion</div>
-  </div>
-  <div class="header-divider"></div>
-  <button class="btn-upload-header" onclick="openUploadModal()">
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-      <polyline points="17 8 12 3 7 8"/>
-      <line x1="12" y1="3" x2="12" y2="15"/>
-    </svg>
-    Upload Document
-  </button>
-  <div class="status-pill">
-    <span class="status-dot checking" id="status-dot"></span>
-    <span id="status-label">Checking…</span>
+
+  <div class="strip-right">
+    <div class="stat-pill">
+      <span class="pill-label">Cache hits&nbsp;</span>
+      <span class="pill-val" id="pill-cache-hits">—</span>
+    </div>
+    <div class="stat-pill">
+      <span class="pill-label">Queries&nbsp;</span>
+      <span class="pill-val" id="pill-queries">—</span>
+    </div>
+    <div class="stat-pill">
+      <span class="status-dot checking" id="status-dot"></span>
+      <span id="status-label">Checking</span>
+    </div>
   </div>
 </header>
 
-<!-- ── Status bar ──────────────────────────────────────────────────── -->
-<div class="status-bar" id="status-bar">
-  <div class="stat-chip reveal">
-    <span class="stat-chip-label">Cache:</span>
-    <span class="stat-chip-value" id="sb-cache">—</span>
-    <span class="stat-chip-label">entries</span>
-  </div>
-  <div class="stat-chip reveal">
-    <span class="stat-chip-label">Hit Rate:</span>
-    <span class="stat-chip-value" id="sb-hitrate">—</span>
-  </div>
-  <div class="stat-chip reveal">
-    <span class="stat-chip-label">Corpus:</span>
-    <span class="stat-chip-value" id="sb-corpus">—</span>
-    <span class="stat-chip-label">docs</span>
-  </div>
-  <div class="stat-chip reveal">
-    <span class="stat-chip-label">Total Queries:</span>
-    <span class="stat-chip-value" id="sb-queries">—</span>
-  </div>
-</div>
+<!-- ── Search Hero ────────────────────────────────────────────────── -->
+<div class="search-hero">
+  <div class="hero-eyebrow">Hybrid Retrieval Engine</div>
 
-<!-- ── Cache hit banner ────────────────────────────────────────────── -->
-<div class="cache-hit-banner" id="cache-banner">
-  <span class="cache-hit-badge">Cache Hit</span>
-  Results served from semantic cache — similar query seen before
-</div>
-
-<!-- ── Hero ───────────────────────────────────────────────────────── -->
-<div style="max-width:1200px;margin:0 auto;padding:40px 24px 16px;">
-  <div style="font-size:11px;font-weight:800;letter-spacing:0.12em;text-transform:uppercase;color:#38bdf8;margin-bottom:10px;">Hybrid Retrieval Engine</div>
-  <h1 style="font-size:clamp(2rem,4vw,3rem);font-weight:900;color:#f0ece8;line-height:1.15;letter-spacing:-0.03em;margin-bottom:12px;">BM25 + FAISS retrieval.<br>Reranked, cached, streamed.</h1>
-  <p style="font-size:15px;color:#a09890;max-width:540px;font-weight:500;">Production RAG with Reciprocal Rank Fusion reranking and a semantic cache at 0.96 cosine threshold that eliminates redundant LLM calls.</p>
-</div>
-
-<!-- ── Search ─────────────────────────────────────────────────────── -->
-<div class="search-section">
-  <div class="search-row">
-    <div class="search-input-wrap">
-      <span class="search-icon-el">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <div class="search-bar">
+    <span class="search-icon">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </span>
+    <input
+      type="text"
+      id="query-input"
+      placeholder="Search the knowledge base…"
+      onkeydown="handleKeydown(event)"
+      autocomplete="off"
+    />
+    <div class="search-right">
+      <div class="topk-wrap">
+        <label for="topk-slider">Top K</label>
+        <input type="range" class="topk-slider" id="topk-slider" min="3" max="10" value="5" oninput="updateTopK(this)" />
+        <span class="topk-val" id="topk-val">5</span>
+      </div>
+      <button class="search-btn" id="btn-search" onclick="doSearch()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="11" cy="11" r="8"/>
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
-      </span>
-      <input
-        type="text"
-        id="query-input"
-        placeholder="Search the knowledge base — e.g. How does PagedAttention work?"
-        onkeydown="handleKeydown(event)"
-        autocomplete="off"
-      />
+        Search
+      </button>
     </div>
-    <div class="topk-wrap">
-      <label for="topk-slider">Top K</label>
-      <input type="range" class="topk-slider" id="topk-slider" min="3" max="10" value="5" oninput="updateTopK(this)" />
-      <span class="topk-val" id="topk-val">5</span>
-    </div>
-    <button class="btn-search" id="btn-search" onclick="doSearch()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-      Search
-    </button>
+  </div>
+
+  <div class="search-tagline">
+    BM25 lexical<span class="tag-sep">·</span>FAISS semantic<span class="tag-sep">·</span>RRF reranking<span class="tag-sep">·</span>0.96 cosine cache threshold
+  </div>
+
+  <div class="example-chips" id="example-chips">
+    <button class="example-chip" onclick="setExample(this)">How does PagedAttention work?</button>
+    <button class="example-chip" onclick="setExample(this)">What is Reciprocal Rank Fusion?</button>
+    <button class="example-chip" onclick="setExample(this)">Explain FAISS vector indexing</button>
+    <button class="example-chip" onclick="setExample(this)">How do RAG systems handle chunking?</button>
   </div>
 </div>
 
-<!-- ── Wave divider ────────────────────────────────────────────────── -->
-<div style="line-height:0; background:var(--bg);">
-  <svg viewBox="0 0 1440 50" preserveAspectRatio="none" style="display:block;width:100%;height:50px;">
-    <path d="M0,25 C480,50 960,0 1440,25 L1440,50 L0,50 Z" fill="#141c26"/>
-  </svg>
-</div>
+<!-- ── Results Area ───────────────────────────────────────────────── -->
+<div class="results-area" id="results-area">
 
-<!-- ── Main content ────────────────────────────────────────────────── -->
-<div class="main-content">
+  <!-- Results section — hidden until first search -->
+  <div id="results-section" style="display:none;">
+    <div class="results-divider">Results</div>
 
-  <!-- Results grid (hidden until first search) -->
-  <div class="results-grid" id="results-grid" style="display:none;">
-
-    <!-- BM25 Column -->
-    <div class="results-col" id="col-bm25">
-      <div class="col-header bm25 reveal">
-        <div class="col-header-left">
-          <span class="col-badge">BM25</span>
-          <div>
-            <div class="col-title">BM25 Results</div>
-            <div class="col-desc">Sparse lexical retrieval</div>
-          </div>
-        </div>
-        <span class="time-badge" id="time-bm25">—</span>
+    <!-- AI Answer Card -->
+    <div class="answer-card" id="answer-card">
+      <div class="answer-header">
+        <span class="answer-label">AI Answer</span>
       </div>
-      <div id="bm25-body" class="results-list"></div>
+      <div class="answer-meta" id="answer-meta"></div>
+      <div class="latency-row" id="latency-row"></div>
+      <div class="answer-text" id="answer-text"></div>
     </div>
 
-    <!-- FAISS Column -->
-    <div class="results-col" id="col-faiss">
-      <div class="col-header faiss reveal">
-        <div class="col-header-left">
-          <span class="col-badge">FAISS</span>
-          <div>
-            <div class="col-title">FAISS Results</div>
-            <div class="col-desc">TF-IDF dense retrieval</div>
-          </div>
-        </div>
-        <span class="time-badge" id="time-faiss">—</span>
-      </div>
-      <div id="faiss-body" class="results-list"></div>
-    </div>
+    <!-- Chunk Cards Grid -->
+    <div class="chunks-grid" id="chunks-grid"></div>
 
-    <!-- Hybrid Column -->
-    <div class="results-col" id="col-hybrid">
-      <div class="col-header hybrid reveal">
-        <div class="col-header-left">
-          <span class="col-badge">RRF</span>
-          <div>
-            <div class="col-title">Hybrid Results</div>
-            <div class="col-desc">Reciprocal Rank Fusion</div>
-          </div>
-        </div>
-        <span class="time-badge" id="time-hybrid">—</span>
-      </div>
-      <div id="hybrid-body" class="results-list"></div>
-    </div>
-
+    <!-- Knowledge Base Divider -->
+    <div class="results-divider">Knowledge Base</div>
   </div>
 
-  <!-- Initial empty state -->
-  <div id="empty-state" style="text-align:center; padding: 60px 20px; color: var(--text-dim);">
-    <div style="font-size:48px; margin-bottom:12px; opacity:0.3;">
-      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
+  <!-- KB Section always visible -->
+  <div class="kb-section">
+    <div class="kb-header">
+      <span style="font:700 10px 'Nunito';letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);">Indexed Documents</span>
+      <button class="add-doc-btn" onclick="openUploadModal()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/>
+          <line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add Document
+      </button>
     </div>
-    <div style="font-size:16px; font-weight:600; color:var(--text-muted); margin-bottom:8px;">
-      Enter a query to search the corpus
-    </div>
-    <div style="font-size:13px; max-width:420px; margin:0 auto; line-height:1.7;">
-      Results will appear in three columns: BM25 (lexical), FAISS/TF-IDF (semantic), and Hybrid RRF (fused). Try:
-    </div>
-    <div style="display:flex; flex-wrap:wrap; gap:8px; justify-content:center; margin-top:16px;">
-      <button onclick="setExample(this)" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:7px 14px;border-radius:20px;font-size:12px;font-family:var(--font);transition:border-color 0.15s;">How does PagedAttention work?</button>
-      <button onclick="setExample(this)" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:7px 14px;border-radius:20px;font-size:12px;font-family:var(--font);transition:border-color 0.15s;">What is Reciprocal Rank Fusion?</button>
-      <button onclick="setExample(this)" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:7px 14px;border-radius:20px;font-size:12px;font-family:var(--font);transition:border-color 0.15s;">Explain FAISS vector indexing</button>
-      <button onclick="setExample(this)" style="cursor:pointer;background:var(--surface);border:1px solid var(--border);color:var(--text-muted);padding:7px 14px;border-radius:20px;font-size:12px;font-family:var(--font);transition:border-color 0.15s;">How do RAG systems handle chunking?</button>
-    </div>
-  </div>
-
-  <!-- Corpus stats panel -->
-  <div class="corpus-panel" id="corpus-panel" style="display:none; margin-top:20px;">
-    <button class="corpus-toggle" onclick="toggleCorpus()">
-      <span>Corpus Statistics</span>
-      <svg class="corpus-toggle-icon" id="corpus-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"/>
-      </svg>
-    </button>
-    <div class="corpus-body" id="corpus-body">
-      <div class="corpus-stat">
-        <div class="corpus-stat-value" id="cs-docs">—</div>
-        <div class="corpus-stat-label">Total Documents</div>
-      </div>
-      <div class="corpus-stat">
-        <div class="corpus-stat-value" id="cs-chunks">—</div>
-        <div class="corpus-stat-label">Estimated Chunks</div>
-      </div>
-      <div class="corpus-stat">
-        <div class="corpus-stat-value" id="cs-size">—</div>
-        <div class="corpus-stat-label">Index Size (MB)</div>
-      </div>
+    <div class="doc-list" id="doc-list">
+      <div class="kb-empty">No documents indexed yet. Add a document to get started.</div>
     </div>
   </div>
 
 </div>
 
-<!-- ── Upload Modal ────────────────────────────────────────────────── -->
+<!-- ── Upload Modal ───────────────────────────────────────────────── -->
 <div class="modal-overlay" id="upload-modal" onclick="handleOverlayClick(event)">
-  <div class="modal reveal">
+  <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">Upload Document</div>
+      <h3>Upload Document</h3>
       <button class="modal-close" onclick="closeUploadModal()">&#x2715;</button>
     </div>
 
@@ -1120,7 +939,7 @@
          ondragleave="handleDragLeave(event)"
          ondrop="handleDrop(event)">
       <div class="drop-icon">
-        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
           <polyline points="17 8 12 3 7 8"/>
           <line x1="12" y1="3" x2="12" y2="15"/>
@@ -1131,7 +950,7 @@
     </div>
 
     <div class="file-name-display" id="file-name-display">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#4ade80" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
         <polyline points="14 2 14 8 20 8"/>
       </svg>
@@ -1140,9 +959,9 @@
 
     <div class="upload-feedback" id="upload-feedback"></div>
 
-    <div class="modal-footer">
+    <div class="modal-actions">
       <button class="btn-cancel" onclick="closeUploadModal()">Cancel</button>
-      <button class="btn-upload-confirm" id="btn-upload-confirm" onclick="doUpload()" disabled>
+      <button class="btn-add" id="btn-upload-confirm" onclick="doUpload()" disabled>
         Upload &amp; Index
       </button>
     </div>
@@ -1152,12 +971,12 @@
 <div id="toast"></div>
 
 <script>
-  /* ── State ──────────────────────────────────────────────── */
-  let isSearching = false;
+  /* ── State ─────────────────────────────────────────────────── */
+  let isSearching  = false;
   let selectedFile = null;
   let statsInterval = null;
 
-  /* ── Top-K slider ───────────────────────────────────────── */
+  /* ── Top-K slider ──────────────────────────────────────────── */
   function updateTopK(el) {
     document.getElementById('topk-val').textContent = el.value;
   }
@@ -1166,23 +985,23 @@
     return parseInt(document.getElementById('topk-slider').value, 10) || 5;
   }
 
-  /* ── Keyboard handler ───────────────────────────────────── */
+  /* ── Keyboard handler ──────────────────────────────────────── */
   function handleKeydown(e) {
     if (e.key === 'Enter') { e.preventDefault(); doSearch(); }
   }
 
-  /* ── Example pills ──────────────────────────────────────── */
+  /* ── Example chips ─────────────────────────────────────────── */
   function setExample(btn) {
     document.getElementById('query-input').value = btn.textContent.trim();
     document.getElementById('query-input').focus();
   }
 
-  /* ── Health + stats ─────────────────────────────────────── */
+  /* ── Health + stats ────────────────────────────────────────── */
   async function checkHealth() {
     const dot   = document.getElementById('status-dot');
     const label = document.getElementById('status-label');
     dot.className = 'status-dot checking';
-    label.textContent = 'Checking…';
+    label.textContent = 'Checking';
     try {
       const res = await fetch('/api/health', { signal: AbortSignal.timeout(4000) });
       if (res.ok) {
@@ -1206,27 +1025,67 @@
         fetch('/api/corpus/stats'),
         fetch('/api/stats'),
       ]);
+
       if (cacheRes.ok) {
         const c = await cacheRes.json();
-        document.getElementById('sb-cache').textContent = c.cache_size ?? '0';
-        document.getElementById('sb-hitrate').textContent =
-          c.total_queries > 0 ? (c.hit_rate * 100).toFixed(1) + '%' : '0%';
+        const cacheHits = c.cache_hits ?? c.cache_size ?? 0;
+        document.getElementById('pill-cache-hits').textContent = cacheHits;
       }
+
       if (corpusRes.ok) {
         const cp = await corpusRes.json();
-        document.getElementById('sb-corpus').textContent = cp.total_docs ?? '—';
-        document.getElementById('cs-docs').textContent   = cp.total_docs ?? '—';
-        document.getElementById('cs-chunks').textContent = cp.total_chunks ?? '—';
-        document.getElementById('cs-size').textContent   = cp.index_size_mb ?? '—';
+        renderDocList(cp);
       }
+
       if (sysRes.ok) {
         const s = await sysRes.json();
-        document.getElementById('sb-queries').textContent = s.total_queries ?? '—';
+        document.getElementById('pill-queries').textContent = s.total_queries ?? '—';
       }
     } catch { /* silent */ }
   }
 
-  /* ── Search ─────────────────────────────────────────────── */
+  /* ── Render document list ──────────────────────────────────── */
+  function renderDocList(corpusData) {
+    const list = document.getElementById('doc-list');
+    const docs = corpusData.documents ?? corpusData.docs ?? [];
+    const totalDocs = corpusData.total_docs ?? docs.length ?? 0;
+
+    if (!docs || docs.length === 0) {
+      list.innerHTML = `<div class="kb-empty">No documents indexed yet. Add a document to get started.</div>`;
+      return;
+    }
+
+    list.innerHTML = docs.map(doc => {
+      const name   = escHtml(doc.title || doc.filename || doc.name || 'Untitled');
+      const chunks = doc.num_chunks ?? doc.chunks ?? '?';
+      const id     = doc.doc_id ?? doc.id ?? '';
+      return `
+        <div class="doc-item">
+          <div class="doc-icon">📄</div>
+          <span class="doc-name">${name}</span>
+          <span class="doc-meta">${chunks} chunks</span>
+          <button class="doc-delete" onclick="deleteDoc('${escHtml(String(id))}')" title="Remove document">&#x2715;</button>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function deleteDoc(docId) {
+    if (!docId) { showToast('Cannot delete: missing document ID.'); return; }
+    try {
+      const res = await fetch(`/api/documents/${encodeURIComponent(docId)}`, { method: 'DELETE' });
+      if (res.ok) {
+        showToast('Document removed.');
+        await fetchStats();
+      } else {
+        throw new Error(`HTTP ${res.status}`);
+      }
+    } catch (err) {
+      showToast('Delete failed: ' + err.message);
+    }
+  }
+
+  /* ── Search ────────────────────────────────────────────────── */
   async function doSearch() {
     if (isSearching) return;
     const query = document.getElementById('query-input').value.trim();
@@ -1235,9 +1094,10 @@
     const topK = getTopK();
     isSearching = true;
     document.getElementById('btn-search').disabled = true;
-    document.getElementById('cache-banner').classList.remove('visible');
 
-    showLoading();
+    // Hide example chips, show results section skeleton
+    document.getElementById('example-chips').style.display = 'none';
+    showLoadingSkeleton(topK);
 
     try {
       const res = await fetch('/api/search', {
@@ -1249,116 +1109,124 @@
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      if (data.cache_hit) {
-        document.getElementById('cache-banner').classList.add('visible');
-      }
-
-      const ms = data.query_time_ms;
-      renderResults('bm25',   data.bm25_results,   ms);
-      renderResults('faiss',  data.faiss_results,  ms);
-      renderResults('hybrid', data.hybrid_results, ms);
-
-      // Update status bar cache entry
-      if (data.cache_size !== undefined) {
-        document.getElementById('sb-cache').textContent = data.cache_size;
-      }
-
+      renderSearchResults(data);
       await fetchStats();
 
     } catch (err) {
       showToast('Search failed: ' + err.message);
-      hideLoading();
+      document.getElementById('results-section').style.display = 'none';
     } finally {
       isSearching = false;
       document.getElementById('btn-search').disabled = false;
     }
   }
 
-  /* ── Render helpers ─────────────────────────────────────── */
-  function showLoading() {
-    document.getElementById('empty-state').style.display = 'none';
-    document.getElementById('results-grid').style.display = 'grid';
-    document.getElementById('corpus-panel').style.display = 'block';
+  /* ── Loading skeleton ──────────────────────────────────────── */
+  function showLoadingSkeleton(topK) {
+    document.getElementById('results-section').style.display = 'block';
 
-    // Reveal column headers
-    requestAnimationFrame(() => {
-      document.querySelectorAll('.col-header.reveal').forEach((el, i) => {
-        setTimeout(() => requestAnimationFrame(() => el.classList.add('visible')), i * 100);
-      });
-    });
+    document.getElementById('answer-card').innerHTML = `
+      <div class="skeleton-answer" style="padding:0;background:none;border:none;border-radius:0;margin:0;">
+        <div class="skel" style="height:14px;width:80px;"></div>
+        <div class="skel" style="height:12px;width:220px;"></div>
+        <div class="skel" style="height:14px;width:100%;"></div>
+        <div class="skel" style="height:14px;width:92%;"></div>
+        <div class="skel" style="height:14px;width:78%;"></div>
+        <div class="skel" style="height:14px;width:85%;"></div>
+      </div>
+    `;
 
-    ['bm25', 'faiss', 'hybrid'].forEach(type => {
-      const body = document.getElementById(type + '-body');
-      body.innerHTML = `
-        <div class="skeleton">
-          <div class="skel-card"></div>
-          <div class="skel-card" style="opacity:0.7;"></div>
-          <div class="skel-card" style="opacity:0.4;"></div>
-        </div>
-      `;
-      document.getElementById('time-' + type).textContent = '—';
-    });
+    const n = Math.min(topK, 6);
+    document.getElementById('chunks-grid').innerHTML = Array.from({length: n}, (_, i) => `
+      <div class="skel-chunk" style="animation-delay:${i*60}ms;">
+        <div class="skel" style="height:10px;width:40px;"></div>
+        <div class="skel" style="height:22px;width:54px;"></div>
+        <div class="skel" style="height:9px;width:30px;"></div>
+        <div class="skel" style="height:1px;background:var(--border);"></div>
+        <div class="skel" style="height:11px;width:100%;"></div>
+        <div class="skel" style="height:11px;width:80%;"></div>
+        <div class="skel" style="height:11px;width:90%;"></div>
+      </div>
+    `).join('');
   }
 
-  function hideLoading() {
-    ['bm25', 'faiss', 'hybrid'].forEach(type => {
-      const body = document.getElementById(type + '-body');
-      body.innerHTML = renderEmpty();
-    });
-  }
+  /* ── Render search results ─────────────────────────────────── */
+  function renderSearchResults(data) {
+    // Restore answer card structure
+    document.getElementById('answer-card').innerHTML = `
+      <div class="answer-header">
+        <span class="answer-label">AI Answer</span>
+      </div>
+      <div class="answer-meta" id="answer-meta"></div>
+      <div class="latency-row" id="latency-row"></div>
+      <div class="answer-text" id="answer-text"></div>
+    `;
 
-  function renderEmpty() {
-    return `<div class="empty-col"><div class="empty-icon">&#128269;</div><div>No results</div></div>`;
-  }
+    // Source chips
+    const metaEl = document.getElementById('answer-meta');
+    const chips = [];
+    if (data.bm25_results && data.bm25_results.length > 0) chips.push(`<span class="source-chip chip-bm25">BM25</span>`);
+    if (data.faiss_results && data.faiss_results.length > 0) chips.push(`<span class="source-chip chip-faiss">FAISS</span>`);
+    if (data.cache_hit) {
+      chips.push(`<span class="source-chip chip-cache-hit">Cache HIT</span>`);
+    } else {
+      chips.push(`<span class="source-chip chip-cache-miss">Cache MISS</span>`);
+    }
+    metaEl.innerHTML = chips.join('');
 
-  function renderResults(type, results, totalMs) {
-    const body = document.getElementById(type + '-body');
-    const timeBadge = document.getElementById('time-' + type);
+    // Latency row
+    const chunks = data.hybrid_results ?? data.bm25_results ?? [];
+    const latencyEl = document.getElementById('latency-row');
+    const ms = data.query_time_ms != null ? Math.round(data.query_time_ms) : '—';
+    const cached = data.cache_hit ? 'Yes' : 'No';
+    const chunkCount = chunks.length;
+    latencyEl.innerHTML = `
+      <span>Latency: <strong>${ms}ms</strong></span>
+      <span>Cached: <strong>${cached}</strong></span>
+      <span>Chunks: <strong>${chunkCount}</strong></span>
+    `;
 
-    timeBadge.textContent = totalMs != null ? Math.round(totalMs) + 'ms' : '—';
+    // Answer text — prefer LLM answer field, fallback to top hybrid chunk
+    const answerEl = document.getElementById('answer-text');
+    const answer = data.answer ?? data.llm_answer ?? data.response ?? null;
+    if (answer) {
+      answerEl.textContent = answer;
+    } else if (chunks.length > 0) {
+      answerEl.textContent = chunks[0].text ?? chunks[0].content ?? '';
+    } else {
+      answerEl.textContent = 'No answer returned.';
+    }
 
-    if (!results || results.length === 0) {
-      body.innerHTML = renderEmpty();
+    // Chunk cards — use hybrid (RRF) results
+    const chunksGrid = document.getElementById('chunks-grid');
+    const displayChunks = data.hybrid_results ?? data.bm25_results ?? [];
+
+    if (!displayChunks || displayChunks.length === 0) {
+      chunksGrid.innerHTML = '';
       return;
     }
 
-    const maxScore = Math.max(...results.map(r => r.score));
-
-    body.innerHTML = results.map((r, i) => {
-      const pct = maxScore > 0 ? ((r.score / maxScore) * 100).toFixed(1) : '0';
-      const scoreDisplay = r.score < 0.001
-        ? r.score.toExponential(2)
-        : r.score.toFixed(4);
+    chunksGrid.innerHTML = displayChunks.map((r, i) => {
+      const scoreVal = r.rrf_score ?? r.score ?? 0;
+      const scoreDisplay = scoreVal < 0.001
+        ? scoreVal.toExponential(2)
+        : scoreVal.toFixed(4);
+      const text = escHtml(r.text ?? r.content ?? '');
+      const delay = i * 60;
 
       return `
-        <div class="result-card reveal" data-delay="${i * 80}">
-          <div class="result-card-header">
-            <div class="rank-badge ${type}">${r.rank}</div>
-            <div class="result-title">${escHtml(r.title)}</div>
-          </div>
-          <div class="result-excerpt">${escHtml(r.text)}</div>
-          <div class="score-bar-wrap">
-            <div class="score-bar-track">
-              <div class="score-bar-fill ${type}" style="width:${pct}%;"></div>
-            </div>
-            <span class="score-label">${scoreDisplay}</span>
-          </div>
+        <div class="chunk-card" style="animation-delay:${delay}ms;">
+          <div class="chunk-rank">Rank #${r.rank ?? (i + 1)}</div>
+          <div class="chunk-score">${scoreDisplay}</div>
+          <div class="chunk-score-label">RRF Score</div>
+          <div class="chunk-divider"></div>
+          <div class="chunk-text">${text}</div>
         </div>
       `;
     }).join('');
-
-    // Trigger reveal animations with staggered rAF
-    requestAnimationFrame(() => {
-      body.querySelectorAll('.result-card.reveal').forEach((card, i) => {
-        const delay = parseInt(card.dataset.delay, 10) || 0;
-        setTimeout(() => {
-          requestAnimationFrame(() => card.classList.add('visible'));
-        }, delay);
-      });
-    });
   }
 
-  /* ── Upload modal ───────────────────────────────────────── */
+  /* ── Upload modal ──────────────────────────────────────────── */
   function openUploadModal() {
     selectedFile = null;
     document.getElementById('file-input').value = '';
@@ -1367,13 +1235,7 @@
     document.getElementById('btn-upload-confirm').disabled = true;
     document.getElementById('upload-feedback').className = 'upload-feedback';
     document.getElementById('upload-feedback').textContent = '';
-    const modal = document.querySelector('.modal.reveal');
-    if (modal) modal.classList.remove('visible');
     document.getElementById('upload-modal').classList.add('open');
-    // Trigger reveal on modal content
-    if (modal) {
-      requestAnimationFrame(() => requestAnimationFrame(() => modal.classList.add('visible')));
-    }
   }
 
   function closeUploadModal() {
@@ -1394,7 +1256,7 @@
     document.getElementById('drop-zone').classList.add('drag-over');
   }
 
-  function handleDragLeave(e) {
+  function handleDragLeave() {
     document.getElementById('drop-zone').classList.remove('drag-over');
   }
 
@@ -1424,7 +1286,7 @@
     formData.append('file', selectedFile);
 
     try {
-      const res = await fetch('/api/upload', { method: 'POST', body: formData });
+      const res  = await fetch('/api/upload', { method: 'POST', body: formData });
       const data = await res.json();
 
       if (res.ok) {
@@ -1446,22 +1308,13 @@
     }
   }
 
-  /* ── Corpus panel toggle ────────────────────────────────── */
-  function toggleCorpus() {
-    const body = document.getElementById('corpus-body');
-    const icon = document.getElementById('corpus-icon');
-    const isOpen = body.classList.contains('open');
-    body.classList.toggle('open', !isOpen);
-    icon.classList.toggle('open', !isOpen);
-  }
-
-  /* ── Utilities ──────────────────────────────────────────── */
+  /* ── Utilities ─────────────────────────────────────────────── */
   function escHtml(str) {
     return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/&/g,  '&amp;')
+      .replace(/</g,  '&lt;')
+      .replace(/>/g,  '&gt;')
+      .replace(/"/g,  '&quot;');
   }
 
   let toastTimer = null;
@@ -1473,31 +1326,7 @@
     toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
   }
 
-  /* ── Scroll-reveal observer ─────────────────────────────── */
-  const revealObserver = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('visible');
-        revealObserver.unobserve(entry.target);
-      }
-    });
-  }, { threshold: 0.1 });
-
-  function observeRevealElements() {
-    document.querySelectorAll('.reveal:not(.visible)').forEach(el => {
-      revealObserver.observe(el);
-    });
-  }
-
-  /* ── Bootstrap ──────────────────────────────────────────── */
-  // Reveal stat chips on load
-  requestAnimationFrame(() => {
-    document.querySelectorAll('.stat-chip.reveal').forEach((el, i) => {
-      setTimeout(() => requestAnimationFrame(() => el.classList.add('visible')), i * 80);
-    });
-  });
-
-  observeRevealElements();
+  /* ── Bootstrap ─────────────────────────────────────────────── */
   checkHealth();
 </script>
 </body>
